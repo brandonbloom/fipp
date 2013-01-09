@@ -1,22 +1,25 @@
 (ns pprint.core
-  "Linear, bounded, functional pretty-printing.
-  See Doitse Swierstra and Olaf Chitil
-  Journal of Functional Programming, 19(1):1-16, January 2009."
+  "See: Oleg Kiselyov, Simon Peyton-Jones, and Amr Sabry
+  Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
-            [clojure.data.finger-tree :refer (double-list)]))
+            [clojure.core.reducers :as r]
+            [clojure.data.finger-tree :refer (double-list)]
+            [pprint.transduce :as t]))
+
+;;; Serialize document into a stream
 
 (defmulti serialize-node first)
 
 (defn serialize [doc]
   (cond
     (seq? doc) (mapcat serialize doc)
-    (string? doc) [doc]
+    (string? doc) [{:op :text, :text doc}]
+    (keyword? doc) [{:op doc}]
     (vector? doc) (serialize-node doc)
-    (keyword? doc) (serialize-node [doc])
     :else (throw (Exception. "Unexpected class for doc node"))))
 
 (defmethod serialize-node :text [[_ & text]]
-  [(apply str text)])
+  [{:op :text, :text (apply str text)}])
 
 (defmethod serialize-node :span [[_ & children]]
   (serialize children))
@@ -24,18 +27,24 @@
 (defmethod serialize-node :line [[_ inline]]
   (let [inline (or inline " ")]
     (assert (string? inline))
-    [[:line inline]]))
+    [{:op :line, :inline inline}]))
 
 (defmethod serialize-node :group [[_ & children]]
-  (concat [:begin] (serialize children) [:end]))
+  (concat [{:op :begin}] (serialize children) [{:op :end}]))
 
-(defmethod serialize-node :nest [[_ n & children]]
-  (assert (integer? n))
-  (concat [[:indent n]] (serialize children) [[:outdent n]]))
+;TODO serialize nest & align nodes
 
-;(defmethod serialize-node :align [[_ indent & children]]
-;  (assert (integer? indent))
-;  TODO align
+(comment
+
+  (serialize "apple")
+  (serialize [:text "apple" "ball"])
+  (serialize [:span "apple" [:group "ball" :line "cat"]])
+  (serialize [:span "apple" [:line ","] "ball"])
+
+)
+
+
+
 
 ;TODO normalize -- i think that this can be done on the serialize
 
