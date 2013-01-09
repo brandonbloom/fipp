@@ -5,37 +5,39 @@
   (:require [clojure.string :as s]
             [clojure.data.finger-tree :refer (double-list)]))
 
-(defmulti node-seq first)
+(defmulti serialize-node first)
 
-(defn pretty-seq [doc]
+(defn serialize [doc]
   (cond
-    (seq? doc) (mapcat pretty-seq doc)
+    (seq? doc) (mapcat serialize doc)
     (string? doc) [doc]
-    (vector? doc) (node-seq doc)
-    (keyword? doc) (node-seq [doc])
+    (vector? doc) (serialize-node doc)
+    (keyword? doc) (serialize-node [doc])
     :else (throw (Exception. "Unexpected class for doc node"))))
 
-(defmethod node-seq :text [[_ & text]]
+(defmethod serialize-node :text [[_ & text]]
   [(apply str text)])
 
-(defmethod node-seq :span [[_ & children]]
-  (pretty-seq children))
+(defmethod serialize-node :span [[_ & children]]
+  (serialize children))
 
-(defmethod node-seq :line [[_ inline]]
+(defmethod serialize-node :line [[_ inline]]
   (let [inline (or inline " ")]
     (assert (string? inline))
     [[:line inline]]))
 
-(defmethod node-seq :group [[_ & children]]
-  (concat [:begin] (pretty-seq children) [:end]))
+(defmethod serialize-node :group [[_ & children]]
+  (concat [:begin] (serialize children) [:end]))
 
-(defmethod node-seq :nest [[_ n & children]]
+(defmethod serialize-node :nest [[_ n & children]]
   (assert (integer? n))
-  (concat [[:indent n]] (pretty-seq children) [[:outdent n]]))
+  (concat [[:indent n]] (serialize children) [[:outdent n]]))
 
-;(defmethod node-seq :align [[_ indent & children]]
+;(defmethod serialize-node :align [[_ indent & children]]
 ;  (assert (integer? indent))
-;  TODO
+;  TODO align
+
+;TODO normalize -- i think that this can be done on the serialize
 
 (def empty-deque (double-list))
 
@@ -60,18 +62,18 @@
         [deque horizontals] (prune position (:deque state))]
     (assoc state :deque deque :horizontals horizontals)))
 
-(defn- execute-text [state text]
+(defn- layout-text [state text]
   (let [length (count text)]
     (-> state
       (prune-state length)
       (update-in [:remaining] - length)
       (update-in [:output] concat [text]))))
 
-(defn- execute-begin [{:keys [position remaining] :as state}]
+(defn- begin-group [{:keys [position remaining] :as state}]
   (update-in state [:deque] conj {:position (+ position remaining)
                                   :horizontals nil}))
 
-(defn- execute-end [{:keys [position deque] :as state}]
+(defn- end-group [{:keys [position deque] :as state}]
   (case (count deque)
     0 (assoc state :deque empty-deque)
     1 (let [{:keys [horizontals]} (peek deque)]
@@ -88,7 +90,7 @@
                                          [(<= position (:position x1))]
                                          (:horizontals x1))})))))
 
-(defn- execute-line [{:keys [indent max-width] :as state} inline]
+(defn- layout-break [{:keys [indent max-width] :as state} inline]
   (let [state* (prune-state state 1)]
     (if (first (:horizontals state*))
       (-> state*
@@ -98,18 +100,19 @@
         (assoc :remaining (- max-width indent))
         (update-in [:output] concat [\newline] (repeat indent " "))))))
 
-(defn execute-dent [state n]
+(defn- dent [state n]
   (update-in state [:indent] + n))
 
 (defn- advance [state command]
-  (case (command-op command)
-    :text (execute-text state command)
-    :begin (execute-begin state)
-    :end (execute-end state)
-    :line (execute-line state (second command))
-    :indent (execute-line state (second command))
-    :outdent (execute-line state (- (second command)))
-    (throw (Exception. (str "Unknown command " (command-op command))))))
+  (let [state (assoc state :command command)]
+    (case (command-op command)
+      :text (layout-text state command)
+      :begin (begin-group state)
+      :end (end-group state)
+      :line (layout-break state (second command))
+      :indent (dent state (second command))
+      :outdent (dent state (- (second command)))
+      (throw (Exception. (str "Unknown command " (command-op command)))))))
 
 (defn- initial-state [width]
   {:indent 0
@@ -127,9 +130,8 @@
 (defn pretty
   ([doc] (pretty doc 70))
   ([doc width]
-   (->> (pretty-seq [:group doc])
+   (->> (serialize [:group doc])
         (reductions advance (initial-state width))
-        (interleave (cons 'INITIAL-STATE (pretty-seq [:group doc])))
         dbg
         :output
         (each print))))
