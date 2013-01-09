@@ -3,7 +3,7 @@
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
             [clojure.core.reducers :as r]
-            [clojure.data.finger-tree :refer (double-list)]
+            [clojure.data.finger-tree :refer (double-list consl ft-concat)]
             [pprint.transduce :as t]))
 
 ;;; Serialize document into a stream
@@ -46,9 +46,13 @@
 
 )
 
+;;; Normalize document
 
-;;; Annotate right-side of nodes
+;TODO normalization
 
+;;; Annotate right-side of non-begin nodes assuming hypothetical zero-width
+;;; empty groups along a single-line formatting of the document. These values
+;;; are used by subsequent passes to produce the final layout.
 
 (defn throw-op [node]
   (throw (Exception. (str "Unexpected op on node: " node))))
@@ -64,7 +68,7 @@
           (let [position* (+ position (count (:inline node)))]
             [position* (assoc node :right position*)])
         :begin
-          [position (assoc node :left position)] ;TODO is :left needed?
+          [position node]
         :end
           [position (assoc node :right position)]
         (throw-op node)))
@@ -76,13 +80,36 @@
 
 )
 
-
-
-
-;TODO normalize -- i think that this can be done on the serialize
+;;; Annotate right-side of groups on their :begin nodes.
+;;; NOTE: This is the non-pruning version, which is unbounded.
 
 (def empty-deque (double-list))
 
+(defn update-top [stack f & args]
+  (conj (pop stack) (apply f (peek stack) args)))
+
+(def annotate-begins
+  (t/mapcat-state
+    (fn [stack node]
+      (cond
+        (= (:op node) :begin)
+          [(conj stack empty-deque) nil]
+        (= (:op node) :end)
+          (let [right (:right node)
+                begin {:op :begin, :right right}
+                [buffer & stack*] stack
+                buffer* (conj (consl buffer begin) node)]
+            (if (empty? stack*)
+              [nil buffer*]
+              [(update-top stack* ft-concat buffer*) nil]))
+        (empty? stack)
+          [nil [node]]
+        :else
+          (let [buffer (peek stack)
+                stack* (pop stack)]
+            [(conj stack* (conj buffer node)) nil])
+        ))
+    nil))
 
 
 (comment
@@ -91,10 +118,13 @@
     (pprint x)
     x)
 
-  (pretty [:text "word"])
+  (->> doc1
+       serialize
+       annotate-rights
+       annotate-begins
+       (into [])
+       clojure.pprint/pprint
+       )
 
-  (pretty [:span "cool" :line "dog"])
-
-  (pretty [:group "omg" :line [:text "wtf" "is" "up?"] [:nest 2 "dog?"]])
-
+       ;(into [])
 )
