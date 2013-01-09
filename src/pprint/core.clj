@@ -14,7 +14,7 @@
   (cond
     (seq? doc) (mapcat serialize doc)
     (string? doc) [{:op :text, :text doc}]
-    (keyword? doc) [{:op doc}]
+    (keyword? doc) (serialize-node [doc])
     (vector? doc) (serialize-node doc)
     :else (throw (Exception. "Unexpected class for doc node"))))
 
@@ -40,6 +40,39 @@
   (serialize [:text "apple" "ball"])
   (serialize [:span "apple" [:group "ball" :line "cat"]])
   (serialize [:span "apple" [:line ","] "ball"])
+
+  (def doc1 [:group "A" :line [:group "B" :line "C"]])
+  (serialize doc1)
+
+)
+
+
+;;; Annotate right-side of nodes
+
+
+(defn throw-op [node]
+  (throw (Exception. (str "Unexpected op on node: " node))))
+
+(def annotate-rights
+  (t/map-state
+    (fn [position node]
+      (case (:op node)
+        :text
+          (let [position* (+ position (count (:text node)))]
+            [position* (assoc node :right position*)])
+        :line
+          (let [position* (+ position (count (:inline node)))]
+            [position* (assoc node :right position*)])
+        :begin
+          [position (assoc node :left position)] ;TODO is :left needed?
+        :end
+          [position (assoc node :right position)]
+        (throw-op node)))
+    0))
+
+(comment
+
+  (->> doc1 serialize annotate-rights (into []) clojure.pprint/pprint)
 
 )
 
