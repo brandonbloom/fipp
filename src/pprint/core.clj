@@ -68,7 +68,7 @@
           (let [position* (+ position (count (:inline node)))]
             [position* (assoc node :right position*)])
         :begin
-          [position node]
+          [position (assoc node :right position)] ; Temporarily assume 0-width
         :end
           [position (assoc node :right position)]
         (throw-op node)))
@@ -82,40 +82,72 @@
 
 ;;; Annotate right-side of groups on their :begin nodes.
 ;;; NOTE: This is the non-pruning version, which is unbounded.
+;;; TODO: Implement the pruning version!!
 
 (def empty-deque (double-list))
 
-(defn update-top [stack f & args]
-  (conj (pop stack) (apply f (peek stack) args)))
+(def ^:dynamic *width* 3)
+
+(defn update-right [deque f & args]
+  (conj (pop deque) (apply f (peek deque) args)))
 
 (def annotate-begins
   (t/mapcat-state
-    (fn [stack node]
-      (cond
-        (= (:op node) :begin)
-          [(conj stack empty-deque) nil]
-        (= (:op node) :end)
-          (let [right (:right node)
-                begin {:op :begin, :right right}
-                [buffer & stack*] stack
-                buffer* (conj (consl buffer begin) node)]
-            (if (empty? stack*)
-              [nil buffer*]
-              [(update-top stack* ft-concat buffer*) nil]))
-        (empty? stack)
-          [nil [node]]
-        :else
-          (let [buffer (peek stack)
-                stack* (pop stack)]
-            [(conj stack* (conj buffer node)) nil])
-        ))
-    nil))
+    (fn [{:keys [position buffers] :as state} {:keys [op right] :as node}]
+      (if (empty? buffers)
+        (if (= op :begin)
+          ;; Buffer groups
+          (let [position* (+ position *width*)
+                buffer {:position position* :nodes empty-deque}
+                state* {:position position* :buffers (double-list buffer)}]
+            [state* nil])
+          ;; Emit unbuffered
+          [state [node]])
+        (if (= op :end)
+          ;; Pop buffer
+          (let [buffer (peek buffers)
+                buffers* (pop buffers)
+                begin {:op :begin :right position}
+                nodes (:nodes buffer)
+                nodes* (conj (consl nodes begin) node)]
+            (if (empty? buffers*)
+              [{:position 0 :buffers empty-deque} nodes*]
+              (let [buffers** (update-in buffers* [:nodes] update-right ft-concat nodes*)]
+                [(assoc state :buffers buffers**) nil])))
+          ;; Pruning lookahead
+          (loop [buffers* (if (= op :begin)
+                            (let [position* (+ position *width*)
+                                  buffer {:position position* :buffers empty-deque}]
+                              (conj buffers buffer))
+                            (update-right buffers update-in [:nodes] conj node))
+                 emit nil]
+            (if (and (<= right position) (<= (count buffers*) *width*))
+              ;; Not too far
+              [(assoc state :buffers buffers*) emit]
+              ;; Too far
+              (let [buffer (peek buffers*)
+                    buffers** (pop buffers*)
+                    begin {:op :begin, :right :too-far}
+                    emit* (concat [begin] (:nodes buffer) emit)]
+                (if (empty? buffers**)
+                  ;; Root buffered group
+                  [{:position 0 :buffers empty-deque} emit*]
+                  ;; Interior group
+                  (recur buffers** emit*)))))
+          )))
+    {:position 0 :buffers empty-deque}))
+
+;;; Format the annotated document stream.
+
+
 
 
 (comment
 
   (defn dbg [x]
-    (pprint x)
+    (println "DBG:")
+    (clojure.pprint/pprint x)
+    (println "----")
     x)
 
   (->> doc1
@@ -126,5 +158,4 @@
        clojure.pprint/pprint
        )
 
-       ;(into [])
 )
