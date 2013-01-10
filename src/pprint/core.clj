@@ -6,6 +6,13 @@
             [clojure.data.finger-tree :refer (double-list consl ft-concat)]
             [pprint.transduce :as t]))
 
+;;; Some double-list (deque / 2-3 finger-tree) utils
+
+(def empty-deque (double-list))
+(def conjl (fnil consl empty-deque))
+(def conjr (fnil conj empty-deque))
+
+
 ;;; Serialize document into a stream
 
 (defmulti serialize-node first)
@@ -84,12 +91,10 @@
 ;;; NOTE: This is the non-pruning version, which is unbounded.
 ;;; TODO: Implement the pruning version!!
 
-(def empty-deque (double-list))
-
 (def ^:dynamic *width* 3)
 
 (defn update-right [deque f & args]
-  (conj (pop deque) (apply f (peek deque) args)))
+  (conjr (pop deque) (apply f (peek deque) args)))
 
 (def annotate-begins
   (t/mapcat-state
@@ -109,31 +114,33 @@
                 buffers* (pop buffers)
                 begin {:op :begin :right position}
                 nodes (:nodes buffer)
-                nodes* (conj (consl nodes begin) node)]
+                nodes* (conjr (conjl nodes begin) node)]
             (if (empty? buffers*)
               [{:position 0 :buffers empty-deque} nodes*]
               (let [buffers** (update-in buffers* [:nodes] update-right ft-concat nodes*)]
                 [(assoc state :buffers buffers**) nil])))
           ;; Pruning lookahead
-          (loop [buffers* (if (= op :begin)
-                            (let [position* (+ position *width*)
-                                  buffer {:position position* :buffers empty-deque}]
-                              (conj buffers buffer))
-                            (update-right buffers update-in [:nodes] conj node))
+          (loop [position* position
+                 buffers* (if (= op :begin)
+                            (let [position** (+ position* *width*)
+                                  buffer {:position position** :buffers empty-deque}]
+                              (conjr buffers buffer))
+                            (update-right buffers update-in [:nodes] conjr node))
                  emit nil]
-            (if (and (<= right position) (<= (count buffers*) *width*))
+            (if (and (<= right position*) (<= (count buffers*) *width*))
               ;; Not too far
-              [(assoc state :buffers buffers*) emit]
+              [{:position position* :buffers buffers*} emit]
               ;; Too far
               (let [buffer (peek buffers*)
                     buffers** (pop buffers*)
+                    position** (:position buffer)
                     begin {:op :begin, :right :too-far}
                     emit* (concat [begin] (:nodes buffer) emit)]
                 (if (empty? buffers**)
                   ;; Root buffered group
                   [{:position 0 :buffers empty-deque} emit*]
                   ;; Interior group
-                  (recur buffers** emit*)))))
+                  (recur position** buffers** emit*)))))
           )))
     {:position 0 :buffers empty-deque}))
 
