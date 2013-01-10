@@ -150,12 +150,23 @@
     (println "----")
     x)
 
-  (->> doc1
-       serialize
-       annotate-rights
-       annotate-begins
-       (into [])
-       clojure.pprint/pprint
-       )
+  (defn map-dbg [prefix coll]
+    (r/map (fn [x]
+             (print prefix)
+             (prn x)
+             x)
+           coll))
+
+  (do
+    (->> doc1
+         serialize
+         annotate-rights
+         (map-dbg "read: ")
+         annotate-begins
+         (map-dbg "generated: ")
+         (into [])
+         ;clojure.pprint/pprint
+         )
+    nil)
 
 )
