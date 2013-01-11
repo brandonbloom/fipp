@@ -1,4 +1,5 @@
 (ns bbloom.fipp.transduce
+  "Provides reducers support for Finite State Transducers"
   (:require [clojure.core.reducers :as r]))
 
 (defmacro defcurried
