@@ -84,6 +84,7 @@
 (defn update-right [deque f & args]
   (conjr (pop deque) (apply f (peek deque) args)))
 
+;TODO I think that this really ought to consider :indent, but not sure how.
 (def annotate-begins
   (t/mapcat-state
     (fn [{:keys [position buffers] :as state}
@@ -140,11 +141,12 @@
          {:keys [op right] :as node}]
       (case op
         :text
-          (let [text (:text node)
-                emit (if newline
-                       [(apply str (repeat indent \space)) text]
-                       [text])]
-            [state emit])
+          (let [text (:text node)]
+            (if newline
+              (let [state* (assoc state :newline false)
+                    emit [(apply str (repeat indent \space)) text]]
+                [state* emit])
+              [state [text]]))
         :line
           (if (zero? fits)
             (let [state* (assoc state :length (- (+ right *width*) indent)
