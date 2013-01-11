@@ -28,7 +28,8 @@
     (string? doc) [{:op :text, :text doc}]
     (keyword? doc) (serialize-node [doc])
     (vector? doc) (serialize-node doc)
-    :else (throw (Exception. "Unexpected class for doc node"))))
+    :else (throw (Exception.
+                   (str "Unexpected class for doc node: " (class doc))))))
 
 (defmethod serialize-node :text [[_ & text]]
   [{:op :text, :text (apply str text)}])
@@ -81,7 +82,7 @@
 ;;; NOTE: This is the non-pruning version, which is unbounded.
 ;;; TODO: Implement the pruning version!!
 
-(def ^:dynamic *width* 3)
+(def ^:dynamic *width* 70)
 
 (defn update-right [deque f & args]
   (conjr (pop deque) (apply f (peek deque) args)))
