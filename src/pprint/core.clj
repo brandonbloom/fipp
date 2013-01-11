@@ -88,7 +88,8 @@
 
 (def annotate-begins
   (t/mapcat-state
-    (fn [{:keys [position buffers] :as state} {:keys [op right] :as node}]
+    (fn [{:keys [position buffers] :as state}
+         {:keys [op right] :as node}]
       (if (empty? buffers)
         (if (= op :begin)
           ;; Buffer groups
@@ -132,8 +133,33 @@
           )))
     {:position 0 :buffers empty-deque}))
 
+
 ;;; Format the annotated document stream.
 
+(def format-nodes
+  (t/mapcat-state
+    (fn [{:keys [fits length] :as state}
+         {:keys [op right] :as node}]
+      (case op
+        :text
+          [state [(:text node)]]
+        :line
+          (if (zero? fits)
+            [(assoc state :length (+ right *width*)) ["\n"]]
+            [state [(:inline node)]])
+        :begin
+          (let [fits* (if (zero? fits)
+                        (cond
+                          (= right :too-far) 0
+                          (<= right length) 1
+                          :else 0)
+                        (inc fits))]
+            [(assoc state :fits fits*) nil])
+        :end
+          (let [fits* (if (zero? fits) 0 (dec fits))]
+            [(assoc state :fits fits*) nil])
+        (throw-op node)))
+    {:fits 0 :length *width*}))
 
 
 
@@ -164,12 +190,14 @@
     (->> doc1
          serialize
          annotate-rights
-         (map-dbg "read: ")
+         ;(map-dbg "read: ")
          annotate-begins
-         (map-dbg "generated: ")
-         (into [])
+         ;(map-dbg "generated: ")
+         format-nodes
+         (t/each print)
          ;clojure.pprint/pprint
          )
-    nil)
+    ;nil
+    )
 
 )
