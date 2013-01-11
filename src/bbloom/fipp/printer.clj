@@ -187,7 +187,8 @@
   `(defn ~name
      ([~'document] (~name ~'document ~defaults))
      ([~'document ~'options]
-       (pprint-document (~document-fn ~'document) ~'options))))
+       (pprint-document (~document-fn ~'document) ~'options)
+       (println))))
 
 
 (comment
