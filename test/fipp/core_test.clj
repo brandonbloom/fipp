@@ -1,6 +1,6 @@
-(ns pprint.core-test
+(ns fipp.core-test
   (:use clojure.test
-        pprint.core))
+        fipp.core))
 
 (deftest a-test
   (testing "FIXME, I fail."

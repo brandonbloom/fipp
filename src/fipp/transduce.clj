@@ -1,4 +1,4 @@
-(ns pprint.transduce
+(ns fipp.transduce
   (:require [clojure.core.reducers :as r]))
 
 (defmacro defcurried
