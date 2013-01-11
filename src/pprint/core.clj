@@ -6,6 +6,7 @@
             [clojure.data.finger-tree :refer (double-list consl ft-concat)]
             [pprint.transduce :as t]))
 
+
 ;;; Some double-list (deque / 2-3 finger-tree) utils
 
 (def empty-deque (double-list))
@@ -39,19 +40,9 @@
 (defmethod serialize-node :group [[_ & children]]
   (concat [{:op :begin}] (serialize children) [{:op :end}]))
 
+
 ;TODO serialize nest & align nodes
 
-(comment
-
-  (serialize "apple")
-  (serialize [:text "apple" "ball"])
-  (serialize [:span "apple" [:group "ball" :line "cat"]])
-  (serialize [:span "apple" [:line ","] "ball"])
-
-  (def doc1 [:group "A" :line [:group "B" :line "C"]])
-  (serialize doc1)
-
-)
 
 ;;; Normalize document
 
@@ -81,11 +72,6 @@
         (throw-op node)))
     0))
 
-(comment
-
-  (->> doc1 serialize annotate-rights (into []) clojure.pprint/pprint)
-
-)
 
 ;;; Annotate right-side of groups on their :begin nodes.
 ;;; NOTE: This is the non-pruning version, which is unbounded.
@@ -156,6 +142,14 @@
     (clojure.pprint/pprint x)
     (println "----")
     x)
+
+  (serialize "apple")
+  (serialize [:text "apple" "ball"])
+  (serialize [:span "apple" [:group "ball" :line "cat"]])
+  (serialize [:span "apple" [:line ","] "ball"])
+
+  (def doc1 [:group "A" :line [:group "B" :line "C"]])
+  (serialize doc1)
 
   (defn map-dbg [prefix coll]
     (r/map (fn [x]
