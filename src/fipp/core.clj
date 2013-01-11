@@ -45,13 +45,14 @@
 (defmethod serialize-node :group [[_ & children]]
   (concat [{:op :begin}] (serialize children) [{:op :end}]))
 
+(defmethod serialize-node :nest [[_ indent & children]]
+  (concat [{:op :indent, :amount indent}]
+          (serialize children)
+          [{:op :indent, :amount (- indent)}]))
 
-;TODO serialize nest & align nodes
+;TODO serialize align nodes
+;TODO document normalization ?
 
-
-;;; Normalize document
-
-;TODO normalization
 
 ;;; Annotate right-side of non-begin nodes assuming hypothetical zero-width
 ;;; empty groups along a single-line formatting of the document. These values
@@ -70,11 +71,7 @@
         :line
           (let [position* (+ position (count (:inline node)))]
             [position* (assoc node :right position*)])
-        :begin
-          [position (assoc node :right position)] ; Temporarily assume 0-width
-        :end
-          [position (assoc node :right position)]
-        (throw-op node)))
+        [position (assoc node :right position)]))
     0))
 
 
@@ -139,15 +136,23 @@
 
 (def format-nodes
   (t/mapcat-state
-    (fn [{:keys [fits length] :as state}
+    (fn [{:keys [fits length indent newline] :as state}
          {:keys [op right] :as node}]
       (case op
         :text
-          [state [(:text node)]]
+          (let [text (:text node)
+                emit (if newline
+                       [(apply str (repeat indent \space)) text]
+                       [text])]
+            [state emit])
         :line
           (if (zero? fits)
-            [(assoc state :length (+ right *width*)) ["\n"]]
+            (let [state* (assoc state :length (- (+ right *width*) indent)
+                                      :newline true)]
+              [state* ["\n"]])
             [state [(:inline node)]])
+        :indent
+          [(update-in state [:indent] + (:amount node)) nil]
         :begin
           (let [fits* (if (zero? fits)
                         (cond
@@ -160,7 +165,10 @@
           (let [fits* (if (zero? fits) 0 (dec fits))]
             [(assoc state :fits fits*) nil])
         (throw-op node)))
-    {:fits 0 :length *width*}))
+    {:fits 0
+     :length *width*
+     :indent 0
+     :newline true}))
 
 
 
@@ -187,16 +195,18 @@
              x)
            coll))
 
-  (do
-    (->> doc1
+  (def doc2 [:group "A" :line [:nest 2 "B" :line "C"] :line "D"])
+
+  (binding [*width* 3]
+    (->> doc2
          serialize
          annotate-rights
          ;(map-dbg "read: ")
          annotate-begins
          ;(map-dbg "generated: ")
          format-nodes
-         (t/each print)
          ;clojure.pprint/pprint
+         (t/each print)
          )
     ;nil
     )
