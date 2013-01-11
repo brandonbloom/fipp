@@ -1,6 +1,7 @@
-(ns fipp.clojure)
-
-;;TODO This is all "EDN" ie simple-dispatch, but also need code-dispatch
+(ns bbloom.fipp.edn
+  "Provides a pretty document serializer and pprint fn for Clojure/EDN forms.
+  See bbloom.fipp.clojure for pretty printing Clojure code."
+  (:require [bbloom.fipp.printer :as printer :refer (defprinter)]))
 
 (defmulti pretty class)
 
@@ -25,22 +26,14 @@
 ;clojure.lang.PersistentQueue pprint-pqueue)
 ;clojure.lang.IDeref pprint-ideref)
 
+(defprinter pprint pretty
+  {:width 70})
+
 (comment
 
-  (require '[fipp.core :as fipp])
-  (require '[fipp.transduce :as t])
-
-  (binding [fipp/*width* 10]
-    (->>
-      ;(list 1 2 3 4 [:a :b :c :d] 5 6 7 8 9)
-      {:foo 1 :bar \c :baz "str"}
-      pretty
-      fipp/serialize
-      fipp/annotate-rights
-      fipp/annotate-begins
-      fipp/format-nodes
-      (t/each print)
-      ;(t/each prn)
-      ))
+  (->
+    ;(list 1 2 3 4 [:a :b :c :d] 5 6 7 8 9)
+    {:foo 1 :bar \c :baz "str"}
+    (pprint {:width 5}))
 
 )

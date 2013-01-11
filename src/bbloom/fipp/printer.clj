@@ -1,10 +1,10 @@
-(ns fipp.core
+(ns bbloom.fipp.printer
   "See: Oleg Kiselyov, Simon Peyton-Jones, and Amr Sabry
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
             [clojure.core.reducers :as r]
             [clojure.data.finger-tree :refer (double-list consl ft-concat)]
-            [fipp.transduce :as t]))
+            [bbloom.fipp.transduce :as t]))
 
 
 ;;; Some double-list (deque / 2-3 finger-tree) utils
@@ -79,6 +79,7 @@
 ;;; NOTE: This is the non-pruning version, which is unbounded.
 ;;; TODO: Implement the pruning version!!
 
+;;TODO get rid of this dynamic var
 (def ^:dynamic *width* 70)
 
 (defn update-right [deque f & args]
@@ -172,6 +173,21 @@
      :indent 0
      :newline true}))
 
+
+(defn pprint-document [document options]
+  (binding [*width* (:width options)]
+    (->> document
+         serialize
+         annotate-rights
+         annotate-begins
+         format-nodes
+         (t/each print))))
+
+(defmacro defprinter [name document-fn defaults]
+  `(defn ~name
+     ([~'document] (~name ~'document ~defaults))
+     ([~'document ~'options]
+       (pprint-document (~document-fn ~'document) ~'options))))
 
 
 (comment
