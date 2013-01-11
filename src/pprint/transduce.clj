@@ -37,6 +37,11 @@
               (reduce f1 acc xs)
               acc)))))))
 
+(defcurried each
+  "Applies f to each item in coll, returns nil"
+  [f coll]
+  (reduce (fn [_ x] (f x) nil) nil coll))
+
 (comment
 
   (->> (range 5)
@@ -52,5 +57,8 @@
                        [[] buffer]))
                   [])
     (into []))
+
+  (->> (range 5)
+    (each #(prn (first (str %)))))
 
 )
