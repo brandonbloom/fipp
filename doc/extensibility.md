@@ -12,14 +12,20 @@ The primitives are as follows:
 
 Just like Swierstra and Chitil.
 
+Strings expand to [:text ...] nodes.
+
 ### :span
 
 A variadic version of binary document composition.
+
+Spans and seqs (not vectors) are equivalent.
 
 ### :line
 
 Just like Swierstra and Chitil.
 Supports alternative "inline" text besides a single space.
+
+`:line` is shorthand for `[:line " "]`.
 
 ### :group
 
@@ -28,6 +34,10 @@ Just like Swierstra and Chitil.
 ### :nest
 
 Just like Swierstra and Chitil.
+
+Accepts an integer indentation argument:
+
+`[:nest 2 ...]`
 
 ### :align (not-yet implemented)
 

@@ -29,7 +29,7 @@ having consumed the bound amount of memory, so you see your first few lines of
 output instantaneously.
 
 The core algorithm is described by Swierstra and Chitil in
-[Linear, Bounded, Functional Pretty-Printing](kar.kent.ac.uk/24041/1/LinearOlaf.pdf).
+[Linear, Bounded, Functional Pretty-Printing](http://kar.kent.ac.uk/24041/1/LinearOlaf.pdf).
 
 Swierstra and Chitil's implementation uses lazy evaluation and requires
 [tying the knot](http://www.haskell.org/haskellwiki/Tying_the_Knot) to
@@ -49,7 +49,7 @@ the bounded-space requirement and eases reasoning about the program's behavior.
 
 Clojure's included pretty printer supports pluggable dispatch tables and
 provides an API for controlling the printing process. The programming model
-is is side-effectual. For example, to print a breaking newline, you execute
+is side-effectual. For example, to print a breaking newline, you execute
 `(pprint-newline :linear)`. This means that it's a difficult and tricky
 process to write or compose new pretty printers.
 
@@ -75,7 +75,8 @@ is extensible via expansion.  See `doc/extensibility.md` for details.
 
 ## TODO
 
-- in progress: nest operator (relative indentation)
+- Tests!! I've only really tried this on a limited number of simple forms.
+- Clojure code-dispatch (right now we're only EDN)
 - limit nesting depth
 - limit lines printed
 - limit list lengths
