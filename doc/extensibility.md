@@ -39,9 +39,13 @@ Accepts an integer indentation argument:
 
 `[:nest 2 ...]`
 
-### :align (not-yet implemented)
+### :align
 
 Just like Swierstra and Chitil, but see their code, not their paper.
+
+The offset is optional:
+
+`[:align ...]` is `[:align 0 ...]`
 
 
 ## Custom Dispatch

@@ -31,6 +31,8 @@
     :else (throw (Exception.
                    (str "Unexpected class for doc node: " (class doc))))))
 
+;; Primitives
+
 (defmethod serialize-node :text [[_ & text]]
   [{:op :text, :text (apply str text)}])
 
@@ -45,13 +47,18 @@
 (defmethod serialize-node :group [[_ & children]]
   (concat [{:op :begin}] (serialize children) [{:op :end}]))
 
-(defmethod serialize-node :nest [[_ indent & children]]
-  (concat [{:op :indent, :amount indent}]
+(defmethod serialize-node :nest [[_ offset & children]]
+  (concat [{:op :nest, :offset offset}]
           (serialize children)
-          [{:op :indent, :amount (- indent)}]))
+          [{:op :outdent}]))
 
-;TODO serialize align nodes
-;TODO document normalization ?
+(defmethod serialize-node :align [[_ & args]]
+  (let [[offset & children] (if (number? (first args))
+                             args
+                             (cons 0 args))]
+    (concat [{:op :align, :offset offset}]
+            (serialize children)
+            [{:op :outdent}])))
 
 
 ;;; Annotate right-side of non-begin nodes assuming hypothetical zero-width
@@ -85,7 +92,8 @@
 (defn update-right [deque f & args]
   (conjr (pop deque) (apply f (peek deque) args)))
 
-;TODO I think that this really ought to consider :indent, but not sure how.
+;TODO I think that this really ought to consider :nest, :align, and :outdent.
+; However, it they seem to work, but are probably subtly bugged.
 (def annotate-begins
   (t/mapcat-state
     (fn [{:keys [position buffers] :as state}
@@ -138,40 +146,50 @@
 
 (def format-nodes
   (t/mapcat-state
-    (fn [{:keys [fits length indent newline] :as state}
+    (fn [{:keys [fits length tab-stops column] :as state}
          {:keys [op right] :as node}]
-      (case op
-        :text
-          (let [text (:text node)]
-            (if newline
-              (let [state* (assoc state :newline false)
-                    emit [(apply str (repeat indent \space)) text]]
-                [state* emit])
-              [state [text]]))
-        :line
-          (if (zero? fits)
-            (let [state* (assoc state :length (- (+ right *width*) indent)
-                                      :newline true)]
-              [state* ["\n"]])
-            [state [(:inline node)]])
-        :indent
-          [(update-in state [:indent] + (:amount node)) nil]
-        :begin
-          (let [fits* (if (zero? fits)
-                        (cond
-                          (= right :too-far) 0
-                          (<= right length) 1
-                          :else 0)
-                        (inc fits))]
-            [(assoc state :fits fits*) nil])
-        :end
-          (let [fits* (if (zero? fits) 0 (dec fits))]
-            [(assoc state :fits fits*) nil])
-        (throw-op node)))
+      (let [indent (peek tab-stops)]
+        (case op
+          :text
+            (let [text (:text node)]
+              (if (zero? column)
+                (let [emit [(apply str (repeat indent \space)) text]
+                      state* (-> state
+                                 (assoc :column 0)
+                                 (update-in [:column] + indent (count text)))]
+                  [state* emit])
+                (let [state* (update-in state [:column] + (count text))]
+                  [state* [text]])))
+          :line
+            (if (zero? fits)
+              (let [state* (assoc state :length (- (+ right *width*) indent)
+                                        :column 0)]
+                [state* ["\n"]])
+              (let [inline (:inline node)
+                    state* (update-in state [:column] + (count inline))]
+                [state* [inline]]))
+          :nest
+            [(update-in state [:tab-stops] conj (+ indent (:offset node))) nil]
+          :align
+            [(update-in state [:tab-stops] conj (+ column (:offset node))) nil]
+          :outdent
+            [(update-in state [:tab-stops] pop) nil]
+          :begin
+            (let [fits* (if (zero? fits)
+                          (cond
+                            (= right :too-far) 0
+                            (<= right length) 1
+                            :else 0)
+                          (inc fits))]
+              [(assoc state :fits fits*) nil])
+          :end
+            (let [fits* (if (zero? fits) 0 (dec fits))]
+              [(assoc state :fits fits*) nil])
+          (throw-op node))))
     {:fits 0
      :length *width*
-     :indent 0
-     :newline true}))
+     :tab-stops '(0) ; Technically, this stack uses unbounded space...
+     :column 0}))
 
 
 (defn pprint-document [document options]
@@ -215,17 +233,18 @@
            coll))
 
   (def doc2 [:group "A" :line [:nest 2 "B" :line "C"] :line "D"])
+  (def doc3 [:group "A" :line [:nest 2 "B-XYZ" [:align -3 :line "C"]] :line "D"])
 
   (binding [*width* 3]
-    (->> doc2
+    (->> doc3
          serialize
+         ;(map-dbg "node: ")
          annotate-rights
-         ;(map-dbg "read: ")
          annotate-begins
-         ;(map-dbg "generated: ")
          format-nodes
          ;clojure.pprint/pprint
          (t/each print)
+         ;(into [])
          )
     ;nil
     )

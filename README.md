@@ -77,11 +77,11 @@ is extensible via expansion.  See `doc/extensibility.md` for details.
 
 - Tests!! I've only really tried this on a limited number of simple forms.
 - Clojure code-dispatch (right now we're only EDN)
-- limit nesting depth
+- limit print depth
 - limit lines printed
 - limit list lengths
 - cycle detection
-- align operator (absolute indentation)
+
 
 ## License
 
