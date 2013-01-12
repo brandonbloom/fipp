@@ -12,11 +12,6 @@
   (bench clojure.pprint/pprint n x)
   (bench bbloom.fipp.edn/pprint n x))
 
-(compare 100 (vec (range 1000)))
-"Elapsed time: 12827.101 msecs"
-"Elapsed time:  4505.121 msecs"
-
-
 (defn random-value []
   (let [f (rand-nth [identity keyword symbol])
         x (rand-nth ["foo" "bar" "baz" "abc123" "qwertyuiop"])]
@@ -32,6 +27,16 @@
           {}
           (repeatedly 5 random-seq)))
 
-(compare 1000 (random-map))
-"Elapsed time: 4412.506 msecs"
-"Elapsed time: 2732.823 msecs"
+(comment
+
+  (bbloom.fipp.edn/pprint (random-map))
+
+  (compare 100 (vec (range 1000)))
+  "Elapsed time: 12827.101 msecs"
+  "Elapsed time:  4505.121 msecs"
+
+  (compare 1000 (random-map))
+  "Elapsed time: 4412.506 msecs"
+  "Elapsed time: 2732.823 msecs"
+
+)
