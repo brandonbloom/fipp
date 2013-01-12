@@ -181,14 +181,14 @@
          annotate-rights
          annotate-begins
          format-nodes
-         (t/each print))))
+         (t/each print)))
+  (println))
 
 (defmacro defprinter [name document-fn defaults]
   `(defn ~name
      ([~'document] (~name ~'document ~defaults))
      ([~'document ~'options]
-       (pprint-document (~document-fn ~'document) ~'options)
-       (println))))
+       (pprint-document (~document-fn ~'document) ~'options))))
 
 
 (comment
