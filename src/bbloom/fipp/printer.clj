@@ -94,7 +94,7 @@
   (conjr (pop deque) (apply f (peek deque) args)))
 
 ;TODO I think that this really ought to consider :nest, :align, and :outdent.
-; However, it they seem to work, but are probably subtly bugged.
+; They seem to work, but are probably subtly bugged.
 (def annotate-begins
   (t/mapcat-state
     (fn [{:keys [position buffers] :as state}
