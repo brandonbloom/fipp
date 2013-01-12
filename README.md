@@ -1,32 +1,77 @@
-# fipp
+# Fast Idiomatic Pretty-Printer
 
-A Clojure library designed to ... well, that part is up to you.
+Fipp is a better pretty printer for Clojure.  It uses the fastest known
+pretty-printing algorithm and is powered by data instead of an API.
+
 
 ## Usage
 
 ```clojure
-;; Refer with a rename to avoid your REPL's pprint.
+;; Refer with a rename to avoid collision with your REPL's pprint.
 (require '[bbloom.fipp.edn :refer (pprint) :rename {pprint fipp}])
 
 (fipp [1 2 3])
 (fipp (range 50))
 (fipp (range 20))
 (fipp (range 20) {:width 10})
-
-Currently, `:width` is the only option and defaults to 70.
 ```
 
-## Implementation Notes
+Currently, `:width` is the only option and defaults to 70.
 
-lazy v yield
-reducers == yield (sorta)
-bounded space & linear runtime! (hence the fast part)
 
-nest & align operators
+## Fast!
 
-## Extensiblity
+This pretty printer has a *linear runtime* and uses *bounded space*.
 
-Data!! (hence the idiomatic part)
+In my non-scientific testing, it has proven to be at least twice as fast as
+`clojure.pprint`.  It also has the nice property of printing no later than
+having consumed the bound amount of memory, so you see your first few lines of
+output instantaneously.
+
+The core algorithm is described by Swierstra and Chitil in
+[Linear, Bounded, Functional Pretty-Printing](kar.kent.ac.uk/24041/1/LinearOlaf.pdf).
+
+Swierstra and Chitil's implementation uses lazy evaluation and requires
+[tying the knot](http://www.haskell.org/haskellwiki/Tying_the_Knot) to
+interleave the measuring and printing phases to achieve the bounded space goal.
+
+However, this implementation is instead a port of the strict evaluation
+strategy as described by Kiselyov, Peyton-Jones, and Sabry in
+[Lazy v. Yield: Incremental, Linear Pretty-printing](http://www.cs.indiana.edu/~sabry/papers/yield-pp.pdf).
+
+Clojure's Reducers framework is used to simulate generators and their `yield`
+operator. Unlike lazy reduction, reducers interleave execution of multi-phase
+reductions by composition of reducer functions. This enables preservation of
+the bounded-space requirement and eases reasoning about the program's behavior.
+
+
+## Idiomatic!
+
+Clojure's included pretty printer supports pluggable dispatch tables and
+provides an API for controlling the printing process. The programming model
+is is side-effectual. For example, to print a breaking newline, you execute
+`(pprint-newline :linear)`. This means that it's a difficult and tricky
+process to write or compose new pretty printers.
+
+Fipp, on the other hand, accepts a "pretty print document" as input. This
+document is similar to HTML markup using [hiccup](https://github.com/weavejester/hiccup).
+
+Here are some examples:
+
+```clojure
+(require '[bbloom.fipp.printer :refer (pprint-document)])
+
+(defn ppd [doc]
+  (pprint-document doc {:width 10}))
+
+(ppd [:span "One" :line "Two" :line "Three"])
+
+(ppd [:group "(do" [:nest 2 :line "(step-1)" :line "(step-2)"] ")"])
+```
+
+There is a small set of primitive document elements, but the set of keywords
+is extensible via expansion.  See `doc/extensibility.md` for details.
+
 
 ## TODO
 
