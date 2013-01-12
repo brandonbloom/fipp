@@ -32,7 +32,24 @@
   [:group "#{" [:align (interpose :line (map pretty s))] "}"])
 
 ;clojure.lang.PersistentQueue pprint-pqueue)
-;clojure.lang.IDeref pprint-ideref)
+
+
+;;; Below here probably belongs in clojure.clj not edn.clj
+
+(defn system-id [obj]
+  (Integer/toHexString (System/identityHashCode obj)))
+
+;;TODO these could benefit from a ::unreadable expander
+
+(defmethod pretty clojure.lang.Atom [a]
+  [:span "#<Atom@" (system-id a) " " (pretty @a) ">"])
+
+(defmethod pretty java.util.concurrent.Future [f]
+  (let [value (if (future-done? f)
+                (pretty @f)
+                ":pending")]
+    [:span "#<Future@" (system-id f) " " value ">"]))
+
 
 (defprinter pprint pretty
   {:width 70})
@@ -41,13 +58,17 @@
 
   (defrecord Person [first-name last-name])
 
+  (def fut (future 1))
+
   (->
     ;(list 1 2 3 4 [:a :b :c :d] 5 6 7 8 9)
     ;{:foo 1 :bar \c :baz "str"}
     ;{:small-value [1 2 3]
     ; :larger-value {:some-key "foo"
     ;                :some-other-key "bar"}}
-    (Person. "Brandon" "Bloom")
-    (pprint {:width 60}))
+    ;(Person. "Brandon" "Bloom")
+    (atom (range 20))
+    ;fut
+    (pprint {:width 10}))
 
 )

@@ -81,6 +81,7 @@ is extensible via expansion.  See `doc/extensibility.md` for details.
 - limit lines printed
 - limit list lengths
 - cycle detection
+- crazy idea: macro to compile fast, non-pretty printers for toString impls.
 
 
 ## License

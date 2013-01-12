@@ -24,6 +24,7 @@
 
 (defn serialize [doc]
   (cond
+    (nil? doc) nil
     (seq? doc) (mapcat serialize doc)
     (string? doc) [{:op :text, :text doc}]
     (keyword? doc) (serialize-node [doc])
