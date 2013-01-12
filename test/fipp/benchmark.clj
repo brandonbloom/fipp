@@ -19,11 +19,11 @@
 
 (defn random-value []
   (let [f (rand-nth [identity keyword symbol])
-        x (rand-nth ["foo" "bar" "baz"])]
+        x (rand-nth ["foo" "bar" "baz" "abc123" "qwertyuiop"])]
     (f x)))
 
 (defn random-seq []
-  (let [n (+ (rand-int 5) 2)]
+  (let [n (+ (rand-int 7) 2)]
     (repeatedly n random-value)))
 
 (defn random-map []
