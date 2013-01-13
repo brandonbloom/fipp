@@ -86,6 +86,16 @@ To depend on this version with Lein, add the following to your `project.clj`:
 Please note that Fipp currently requires Clojure 1.5.0-RC1 for access to the latest Reducers bits.
 I'll upgrade the project to 1.5.0 FINAL when it is released.
 
+### nREPL Integration
+
+If you want Fipp at your fingertips for all of your lein projects,
+you can merge the following into your `~/.lein/profile.clj`
+
+```clojure
+{:user {:repl-options {:custom-eval (require '[bbloom.fipp.edn :refer (pprint) :rename {pprint fipp}])}
+        :dependencies [[fipp "0.1.0-SNAPSHOT"]]}}
+```
+
 ## TODO
 
 - Tests!! I've only really tried this on a limited number of simple forms.
