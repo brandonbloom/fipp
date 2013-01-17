@@ -62,9 +62,10 @@
             [{:op :outdent}])))
 
 
-;;; Annotate right-side of non-begin nodes assuming hypothetical zero-width
-;;; empty groups along a single-line formatting of the document. These values
-;;; are used by subsequent passes to produce the final layout.
+;;; Annotate right-side of nodes assuming hypothetical single-line
+;;; formatting of the document. Groups and indentation directives
+;;; are temporarily assumed to be zero-width. These values are
+;;; used by subsequent passes to produce the final layout.
 
 (defn throw-op [node]
   (throw (Exception. (str "Unexpected op on node: " node))))
@@ -83,9 +84,9 @@
     0))
 
 
-;;; Annotate right-side of groups on their :begin nodes.
-;;; NOTE: This is the non-pruning version, which is unbounded.
-;;; TODO: Implement the pruning version!!
+;;; Annotate right-side of groups on their :begin nodes.  This includes the
+;;; pruning algorithm which will annotate some :begin nodes as being :too-far
+;;; to the right without calculating their exact sizes.
 
 ;;TODO get rid of this dynamic var
 (def ^:dynamic *width* 70)
@@ -93,8 +94,6 @@
 (defn update-right [deque f & args]
   (conjr (pop deque) (apply f (peek deque) args)))
 
-;TODO I think that this really ought to consider :nest, :align, and :outdent.
-; They seem to work, but are probably subtly bugged.
 (def annotate-begins
   (t/mapcat-state
     (fn [{:keys [position buffers] :as state}
