@@ -8,7 +8,7 @@
       (with-out-str
         (f x)))))
 
-(defn compare [n x]
+(defn bench-both [n x]
   (bench clojure.pprint/pprint n x)
   (bench bbloom.fipp.edn/pprint n x))
 
@@ -31,11 +31,11 @@
 
   (bbloom.fipp.edn/pprint (random-map))
 
-  (compare 100 (vec (range 1000)))
+  (bench-both 100 (vec (range 1000)))
   "Elapsed time: 12827.101 msecs"
   "Elapsed time:  4505.121 msecs"
 
-  (compare 1000 (random-map))
+  (bench-both 1000 (random-map))
   "Elapsed time: 4412.506 msecs"
   "Elapsed time: 2732.823 msecs"
 
