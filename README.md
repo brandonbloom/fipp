@@ -1,7 +1,10 @@
 # Fast Idiomatic Pretty-Printer
 
-Fipp is a better pretty printer for Clojure.  It uses the fastest known
-pretty-printing algorithm and is powered by data instead of an API.
+Fipp is a better pretty printer for Clojure.
+
+Like clojure.pprint, this pretty printer has a *linear runtime* and uses
+*bounded space*. However, unlike clojure.pprint, Fipp's implementation is
+functionally pure and its interface is powered by data not method calls.
 
 
 ## Usage
@@ -20,8 +23,6 @@ Currently, `:width` is the only option and defaults to 70.
 
 
 ## Fast!
-
-This pretty printer has a *linear runtime* and uses *bounded space*.
 
 In my non-scientific testing, it has proven to be at least twice as fast as
 `clojure.pprint`.  It also has the nice property of printing no later than
@@ -96,15 +97,22 @@ you can merge the following into your `~/.lein/profile.clj`
         :dependencies [[fipp "0.1.0-SNAPSHOT"]]}}
 ```
 
+
 ## TODO
+
+#### No Brainers
 
 - Tests!! I've only really tried this on a limited number of simple forms.
 - Clojure code-dispatch (right now we're only EDN)
-- limit print depth
-- limit lines printed
-- limit list lengths
-- cycle detection
-- crazy idea: macro to compile fast, non-pretty printers for toString impls.
+- Limit print depth
+- Limit lines printed
+- Limit list lengths
+- Cycle detection
+
+#### Crazy Ideas
+
+- Macro to compile fast, non-pretty printers for toString impls.
+- Document stylesheets (think CSS/XSLT/DSSSL) for customizing printing
 
 
 ## License
