@@ -115,14 +115,16 @@
                 nodes (conjlr begin (:nodes buffer) node)]
             (if (empty? buffers*)
               [{:position 0 :buffers empty-deque} nodes]
-              (let [buffers** (update-right buffers* update-in [:nodes] ft-concat nodes)]
+              (let [buffers** (update-right buffers* update-in [:nodes]
+                                            ft-concat nodes)]
                 [(assoc state :buffers buffers**) nil])))
           ;; Pruning lookahead
           (loop [position* position
                  buffers* (if (= op :begin)
                             (conjr buffers {:position (+ right *width*)
                                             :nodes empty-deque})
-                            (update-right buffers update-in [:nodes] conjr node))
+                            (update-right buffers update-in [:nodes]
+                                          conjr node))
                  emit nil]
             (if (and (<= right position*) (<= (count buffers*) *width*))
               ;; Not too far
@@ -154,9 +156,7 @@
             (let [text (:text node)]
               (if (zero? column)
                 (let [emit [(apply str (repeat indent \space)) text]
-                      state* (-> state
-                                 (assoc :column 0)
-                                 (update-in [:column] + indent (count text)))]
+                      state* (assoc state :column (+ indent (count text)))]
                   [state* emit])
                 (let [state* (update-in state [:column] + (count text))]
                   [state* [text]])))
@@ -175,15 +175,14 @@
           :outdent
             [(update-in state [:tab-stops] pop) nil]
           :begin
-            (let [fits* (if (zero? fits)
-                          (cond
-                            (= right :too-far) 0
-                            (<= right length) 1
-                            :else 0)
-                          (inc fits))]
+            (let [fits* (cond
+                          (pos? fits) (inc fits)
+                          (= right :too-far) 0
+                          (<= right length) 1
+                          :else 0)]
               [(assoc state :fits fits*) nil])
           :end
-            (let [fits* (if (zero? fits) 0 (dec fits))]
+            (let [fits* (max 0 (dec fits))]
               [(assoc state :fits fits*) nil])
           (throw-op node))))
     {:fits 0
