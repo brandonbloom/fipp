@@ -1,62 +1,120 @@
 (ns bbloom.fipp.printer_test
   (:use [clojure.test])
-  (:require [bbloom.fipp.printer :as p]))
+  (:require [clojure.core.reducers :as r]
+            [bbloom.fipp.printer :as p]))
 
-;; Group (Text ”A” :+: (Line :+: Group (Text ”B” :+: (Line :+: Text ”C”))))
+;; Tests for doc1 converted from the Haskell in the literature.
+;; Group (Text "A" :+: (Line :+: Group (Text "B" :+: (Line :+: Text "C"))))
 (def doc1 [:group "A" :line [:group "B" :line "C"]])
+
+(deftest serialize-test
+  (testing "Simple"
+    (is (= (p/serialize doc1)
+           [{:op :begin}
+            {:op :text :text "A"}
+            {:op :line :inline " "}
+            {:op :begin}
+            {:op :text :text "B"}
+            {:op :line :inline " "}
+            {:op :text :text "C"}
+            {:op :end}
+            {:op :end}])))
+  ;;TODO test seq expansion
+  )
 
 (deftest annotate-rights-test
   (testing "A.2  Computing the horizontal position"
     (is (= (->> doc1 p/serialize p/annotate-rights (into []))
            [; Generated: GBeg 0
             {:op :begin :right 0}
-            ; Generated: TE 1 ”A”
+            ; Generated: TE 1 "A"
             {:op :text :right 1 :text "A"}
             ; Generated: LE 2
             {:op :line :right 2 :inline " "}
             ; Generated: GBeg 2
             {:op :begin :right 2}
-            ; Generated: TE 3 ”B”
+            ; Generated: TE 3 "B"
             {:op :text :right 3 :text "B"}
             ; Generated: LE 4
             {:op :line :right 4 :inline " "}
-            ; Generated: TE 5 ”C”
+            ; Generated: TE 5 "C"
             {:op :text :right 5 :text "C"}
             ; Generated: GEnd 5
             {:op :end :right 5}
             ; Generated: GEnd 5
             {:op :end :right 5}]))))
 
+(deftest annotate-begins-test
 
-; A.3 Determining group widths
-; Generated: GBeg 5
-; Generated: TE 1 ”A”
-; Generated: LE 2
-; Generated: GBeg 5
-; Generated: TE 3 ”B”
-; Generated: LE 4
-; Generated: TE 5 ”C”
-; Generated: GEnd 5
-; Generated: GEnd 5
+  (testing "A.3 Determining group widths"
+    (is (= (->> doc1 p/serialize p/annotate-rights p/annotate-begins (into []))
+        [; Generated: GBeg 5
+         {:op :begin :right 5}
+         ; Generated: TE 1 "A"
+         {:op :text :right 1 :text "A"}
+         ; Generated: LE 2
+         {:op :line :right 2 :inline " "}
+         ; Generated: GBeg 5
+         {:op :begin :right 5}
+         ; Generated: TE 3 "B"
+         {:op :text :right 3 :text "B"}
+         ; Generated: LE 4
+         {:op :line :right 4 :inline " "}
+         ; Generated: TE 5 "C"
+         {:op :text :right 5 :text "C"}
+         ; Generated: GEnd 5
+         {:op :end :right 5}
+         ; Generated: GEnd 5
+         {:op :end :right 5}])))
 
-
-; A.4 Pruning
-; ;; page width 3
-; trHPP: read: GBeg 0
-; trHPP: read: TE 1 ”A”
-; trHPP: read: LE 2
-; trHPP: read: GBeg 2
-; trHPP: read: TE 3 ”B”
-; trHPP: read: LE 4
-; Generated: GBeg TooFar
-; Generated: TE 1 ”A”
-; Generated: LE 2
-; trHPP: read: TE 5 ”C”
-; trHPP: read: GEnd 5
-; Generated: GBeg (Small 5)
-; Generated: TE 3 ”B”
-; Generated: LE 4
-; Generated: TE 5 ”C”
-; Generated: GEnd 5
-; trHPP: read: GEnd 5
-; Generated: GEnd 5
+  (testing "A.4 Pruning"
+    (let [acc (atom [])
+          log (fn [prefix coll]
+                (r/map (fn [x]
+                         (swap! acc conj [prefix x])
+                         x)
+                       coll))
+           pipeline (->> doc1 p/serialize p/annotate-rights
+                         (log :in)
+                         p/annotate-begins
+                         (log :out))]
+      (is (= (do ;; page width 3
+               (binding [p/*width* 3]
+                 (into [] pipeline))
+               @acc)
+             [; trHPP: read: GBeg 0
+              [:in {:op :begin :right 0}]
+              ; trHPP: read: TE 1 "A"
+              [:in {:op :text :right 1 :text "A"}]
+              ; trHPP: read: LE 2
+              [:in {:op :line :right 2 :inline " "}]
+              ; trHPP: read: GBeg 2
+              [:in {:op :begin :right 2}]
+              ; trHPP: read: TE 3 "B"
+              [:in {:op :text :right 3 :text "B"}]
+              ; trHPP: read: LE 4
+              [:in {:op :line :right 4 :inline " "}]
+              ; Generated: GBeg TooFar
+              [:out {:op :begin :right :too-far}]
+              ; Generated: TE 1 "A"
+              [:out {:op :text :right 1 :text "A"}]
+              ; Generated: LE 2
+              [:out {:op :line :right 2 :inline " "}]
+              ; trHPP: read: TE 5 "C"
+              [:in {:op :text :right 5 :text "C"}]
+              ; trHPP: read: GEnd 5
+              [:in {:op :end :right 5}]
+              ; Generated: GBeg (Small 5)
+              [:out {:op :begin :right 5}]
+              ; Generated: TE 3 "B"
+              [:out {:op :text :right 3 :text "B"}]
+              ; Generated: LE 4
+              [:out {:op :line :right 4 :inline " "}]
+              ; Generated: TE 5 "C"
+              [:out {:op :text :right 5 :text "C"}]
+              ; Generated: GEnd 5
+              [:out {:op :end :right 5}]
+              ; trHPP: read: GEnd 5
+              [:in {:op :end :right 5}]
+              ; Generated: GEnd 5
+              [:out {:op :end :right 5}]])))))
