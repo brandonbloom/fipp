@@ -4,7 +4,7 @@ Fipp is a better pretty printer for Clojure.
 
 Like clojure.pprint, this pretty printer has a *linear runtime* and uses
 *bounded space*. However, unlike clojure.pprint, Fipp's implementation is
-functionally pure and its interface is powered by data not method calls.
+functionally pure and its interface is powered by data, not method calls.
 
 
 ## Usage
