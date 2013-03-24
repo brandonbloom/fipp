@@ -101,7 +101,7 @@
       (if (empty? buffers)
         (if (= op :begin)
           ;; Buffer groups
-          (let [position* (+ position *width*)
+          (let [position* (+ right *width*)
                 buffer {:position position* :nodes empty-deque}
                 state* {:position position* :buffers (double-list buffer)}]
             [state* nil])
