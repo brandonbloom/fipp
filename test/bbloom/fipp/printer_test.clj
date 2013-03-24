@@ -118,3 +118,16 @@
               [:in {:op :end :right 5}]
               ; Generated: GEnd 5
               [:out {:op :end :right 5}]])))))
+
+(defn ppstr [doc width]
+  (with-out-str
+    (p/pprint-document doc {:width width})))
+
+(deftest formatted-test
+  (testing "p/pprint-document"
+    (is (= (ppstr doc1 6) "A B C\n"))
+    (is (= (ppstr doc1 5) "A B C\n"))
+    (is (= (ppstr doc1 4) "A\nB C\n"))
+    (is (= (ppstr doc1 3) "A\nB C\n"))
+    (is (= (ppstr doc1 2) "A\nB\nC\n"))
+    (is (= (ppstr doc1 1) "A\nB\nC\n"))))
