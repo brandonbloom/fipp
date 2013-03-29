@@ -45,6 +45,9 @@
     (assert (string? inline))
     [{:op :line, :inline inline}]))
 
+(defmethod serialize-node :break [& _]
+  [{:op :break}])
+
 (defmethod serialize-node :group [[_ & children]]
   (concat [{:op :begin}] (serialize children) [{:op :end}]))
 
@@ -168,6 +171,10 @@
               (let [inline (:inline node)
                     state* (update-in state [:column] + (count inline))]
                 [state* [inline]]))
+          :break
+            (let [state* (assoc state :length (- (+ right *width*) indent)
+                                      :column 0)]
+              [state* ["\n"]])
           :nest
             [(update-in state [:tab-stops] conj (+ indent (:offset node))) nil]
           :align
