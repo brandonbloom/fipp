@@ -27,6 +27,10 @@ Supports alternative "inline" text besides a single space.
 
 `:line` is shorthand for `[:line " "]`.
 
+### :break
+
+Force a newline. The current indentation level is preserved.
+
 ### :group
 
 Just like Swierstra and Chitil.
