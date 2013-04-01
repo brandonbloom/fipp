@@ -14,6 +14,10 @@ Just like Swierstra and Chitil.
 
 Strings expand to [:text ...] nodes.
 
+### :pass
+
+Arguments are passed through and printed verbatim. Ex. `[:pass ...]`.
+
 ### :span
 
 A variadic version of binary document composition.
