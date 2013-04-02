@@ -37,6 +37,9 @@
 (defmethod serialize-node :text [[_ & text]]
   [{:op :text, :text (apply str text)}])
 
+(defmethod serialize-node :pass [[_ & text]]
+  [{:op :pass, :text (apply str text)}])
+
 (defmethod serialize-node :span [[_ & children]]
   (serialize children))
 
@@ -163,6 +166,8 @@
                   [state* emit])
                 (let [state* (update-in state [:column] + (count text))]
                   [state* [text]])))
+          :pass
+            [state [(:text node)]]
           :line
             (if (zero? fits)
               (let [state* (assoc state :length (- (+ right *width*) indent)
@@ -254,5 +259,19 @@
          )
     ;nil
     )
+
+  ;; test of :pass op
+  (do
+    (pprint-document
+      [:group "AB" :line "B" :line "C"]
+      {:width 6}) 
+    (println "--")
+    (pprint-document
+      [:group "<AB>" :line "B" :line "C"]
+      {:width 6}) 
+    (println "--")
+    (pprint-document
+      [:group [:pass "<"] "AB" [:pass ">"] :line "B" :line "C"]
+      {:width 6})) 
 
 )
