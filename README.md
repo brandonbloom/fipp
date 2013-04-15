@@ -24,8 +24,8 @@ Currently, `:width` is the only option and defaults to 70.
 
 ## Fast!
 
-In my non-scientific testing, it has proven to be at least twice as fast as
-`clojure.pprint`.  It also has the nice property of printing no later than
+In my non-scientific testing, it has proven to be at least five times as fast
+as `clojure.pprint`.  It also has the nice property of printing no later than
 having consumed the bound amount of memory, so you see your first few lines of
 output instantaneously.
 
