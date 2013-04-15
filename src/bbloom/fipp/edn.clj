@@ -3,53 +3,63 @@
   See bbloom.fipp.clojure for pretty printing Clojure code."
   (:require [bbloom.fipp.printer :as printer :refer (defprinter)]))
 
-(defmulti pretty class)
+;;TODO Figure out what belongs in clojure.clj instead of edn.clj
 
-(defmethod pretty :default [x]
-  [:text (pr-str x)])
-
-(defmethod pretty clojure.lang.IPersistentVector [v]
-  [:group "[" [:align (interpose :line (map pretty v))] "]"])
-
-(defmethod pretty clojure.lang.ISeq [s]
-  [:group "(" [:align (interpose :line (map pretty s))] ")"])
-
-(defn pretty-map [m]
-  (let [kvps (map (fn [[k v]]
-                    [:span (pretty k) " " (pretty v)])
-                  m)]
-    [:group "{" [:align (interpose [:span "," :line] kvps)]  "}"]))
-
-(defmethod pretty clojure.lang.IPersistentMap [m]
-  (pretty-map m))
-
-(defmethod pretty clojure.lang.IRecord [r]
-  [:span "#" (-> r class .getName) (pretty-map r)])
-
-(prefer-method pretty clojure.lang.IRecord clojure.lang.IPersistentMap)
-
-(defmethod pretty clojure.lang.IPersistentSet [s]
-  [:group "#{" [:align (interpose :line (map pretty s))] "}"])
-
-;clojure.lang.PersistentQueue pprint-pqueue)
-
-
-;;; Below here probably belongs in clojure.clj not edn.clj
+(defprotocol IPretty
+  (-pretty [x]))
 
 (defn system-id [obj]
   (Integer/toHexString (System/identityHashCode obj)))
 
-;;TODO these could benefit from a ::unreadable expander
+(defn pretty-map [m]
+  (let [kvps (map (fn [[k v]]
+                    [:span (-pretty k) " " (-pretty v)])
+                  m)
+        doc [:group "{" [:align (interpose [:span "," :line] kvps)]  "}"]]
+    (if (instance? clojure.lang.IRecord m)
+      [:span "#" (-> m class .getName) doc]
+      doc)))
 
-(defmethod pretty clojure.lang.Atom [a]
-  [:span "#<Atom@" (system-id a) " " (pretty @a) ">"])
+(extend-protocol IPretty
 
-(defmethod pretty java.util.concurrent.Future [f]
-  (let [value (if (future-done? f)
-                (pretty @f)
-                ":pending")]
-    [:span "#<Future@" (system-id f) " " value ">"]))
+  java.lang.Object
+  (-pretty [x]
+    [:text (pr-str x)])
 
+  clojure.lang.IPersistentVector
+  (-pretty [v]
+    [:group "[" [:align (interpose :line (map -pretty v))] "]"])
+
+  clojure.lang.ISeq
+  (-pretty [s]
+    [:group "(" [:align (interpose :line (map -pretty s))] ")"])
+
+  clojure.lang.IPersistentMap
+  (-pretty [m]
+    (pretty-map m))
+
+  ;;TODO figure out how inheritence is resolved...
+  clojure.lang.IRecord
+  (-pretty [r]
+    (pretty-map r))
+
+  clojure.lang.Atom
+  (-pretty [a]
+    [:span "#<Atom@" (system-id a) " " (-pretty @a) ">"])
+
+  java.util.concurrent.Future
+  (-pretty [f]
+    (let [value (if (future-done? f)
+                  (-pretty @f)
+                  ":pending")]
+      [:span "#<Future@" (system-id f) " " value ">"]))
+
+  ;TODO clojure.lang.PersistentQueue, lots more stuff too
+
+  )
+
+(defn pretty [x]
+  (-pretty x))
 
 (defprinter pprint pretty
   {:width 70})
@@ -67,8 +77,8 @@
     ; :larger-value {:some-key "foo"
     ;                :some-other-key "bar"}}
     ;(Person. "Brandon" "Bloom")
-    (atom (range 20))
+    ;(atom (range 20))
     ;fut
-    (pprint {:width 10}))
+    (pprint {:width 30}))
 
 )
