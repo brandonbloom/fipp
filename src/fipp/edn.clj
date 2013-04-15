@@ -1,7 +1,7 @@
-(ns bbloom.fipp.edn
+(ns fipp.edn
   "Provides a pretty document serializer and pprint fn for Clojure/EDN forms.
-  See bbloom.fipp.clojure for pretty printing Clojure code."
-  (:require [bbloom.fipp.printer :as printer :refer (defprinter)]))
+  See fipp.clojure for pretty printing Clojure code."
+  (:require [fipp.printer :as printer :refer (defprinter)]))
 
 ;;TODO Figure out what belongs in clojure.clj instead of edn.clj
 

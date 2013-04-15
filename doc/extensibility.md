@@ -4,7 +4,7 @@
 
 TODO: More docs here! Until then, compare to Swierstra and Chitil.
 
-See also the `serialize` function in `src/bbloom/fipp/printer.clj`
+See also the `serialize` function in `src/fipp/printer.clj`
 
 The primitives are as follows:
 
@@ -60,12 +60,12 @@ The offset is optional:
 
 Write a `pretty` function and use `defprinter`.
 
-TODO: More docs here!  Until then, see `src/bbloom/fipp/edn.clj`.
+TODO: More docs here!  Until then, see `src/fipp/edn.clj`.
 
 ## Custom Document Nodes
 
 ```clojure
-(defmethod bbloom.fipp.printer/serialize-node ...)
+(defmethod fipp.printer/serialize-node ...)
 ```
 
 TODO: More docs here!

@@ -1,4 +1,4 @@
-(ns bbloom.fipp.transduce
+(ns fipp.transduce
   "Provides reducers support for State Transducers"
   (:require [clojure.core.reducers :as r]))
 

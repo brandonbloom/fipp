@@ -1,6 +1,6 @@
-(ns bbloom.fipp.benchmark
+(ns fipp.benchmark
   (:require [clojure.pprint]
-            [bbloom.fipp.edn]))
+            [fipp.edn]))
 
 (defn bench [f n x]
   (time
@@ -10,7 +10,7 @@
 
 (defn bench-both [n x]
   (bench clojure.pprint/pprint n x)
-  (bench bbloom.fipp.edn/pprint n x))
+  (bench fipp.edn/pprint n x))
 
 (defn random-value []
   (let [f (rand-nth [identity keyword symbol])
@@ -29,7 +29,7 @@
 
 (comment
 
-  (bbloom.fipp.edn/pprint (random-map))
+  (fipp.edn/pprint (random-map))
 
   (bench-both 100 (vec (range 1000)))
   "Elapsed time: 12827.101 msecs"

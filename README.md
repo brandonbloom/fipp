@@ -11,7 +11,7 @@ functionally pure and its interface is powered by data, not method calls.
 
 ```clojure
 ;; Refer with a rename to avoid collision with your REPL's pprint.
-(require '[bbloom.fipp.edn :refer (pprint) :rename {pprint fipp}])
+(require '[fipp.edn :refer (pprint) :rename {pprint fipp}])
 
 (fipp [1 2 3])
 (fipp (range 50))
@@ -60,7 +60,7 @@ document is similar to HTML markup using [hiccup](https://github.com/weavejester
 Here are some examples:
 
 ```clojure
-(require '[bbloom.fipp.printer :refer (pprint-document)])
+(require '[fipp.printer :refer (pprint-document)])
 
 (defn ppd [doc]
   (pprint-document doc {:width 10}))
@@ -93,7 +93,7 @@ If you want Fipp at your fingertips for all of your lein projects,
 you can merge the following into your `~/.lein/profile.clj`
 
 ```clojure
-{:user {:repl-options {:custom-eval (require '[bbloom.fipp.edn :refer (pprint) :rename {pprint fipp}])}
+{:user {:repl-options {:custom-eval (require '[fipp.edn :refer (pprint) :rename {pprint fipp}])}
         :dependencies [[fipp "0.1.0-SNAPSHOT"]]}}
 ```
 

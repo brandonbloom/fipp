@@ -1,10 +1,10 @@
-(ns bbloom.fipp.printer
+(ns fipp.printer
   "See: Oleg Kiselyov, Simon Peyton-Jones, and Amr Sabry
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
             [clojure.core.reducers :as r]
             [clojure.data.finger-tree :refer (double-list consl ft-concat)]
-            [bbloom.fipp.transduce :as t]))
+            [fipp.transduce :as t]))
 
 
 ;;; Some double-list (deque / 2-3 finger-tree) utils

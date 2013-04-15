@@ -1,7 +1,7 @@
-(ns bbloom.fipp.printer_test
+(ns fipp.printer_test
   (:use [clojure.test])
   (:require [clojure.core.reducers :as r]
-            [bbloom.fipp.printer :as p]))
+            [fipp.printer :as p]))
 
 ;; Tests for doc1 converted from the Haskell in the literature.
 ;; Group (Text "A" :+: (Line :+: Group (Text "B" :+: (Line :+: Text "C"))))
