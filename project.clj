@@ -1,4 +1,4 @@
-(defproject fipp "0.1.0-SNAPSHOT"
+(defproject fipp "0.2.0-SNAPSHOT"
   :description "Fast Idiomatic Pretty Printer for Clojure"
   :url "https://github.com/brandonbloom/fipp"
   :license {:name "Eclipse Public License"
