@@ -22,6 +22,10 @@
 
 (extend-protocol IPretty
 
+  nil
+  (-pretty [x]
+    [:text "nil"])
+
   java.lang.Object
   (-pretty [x]
     [:text (pr-str x)])
