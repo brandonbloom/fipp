@@ -3,12 +3,15 @@
             [fipp.edn]))
 
 (defn bench [f n x]
+  (prn)
+  (prn f)
   (time
     (dotimes [i n]
       (with-out-str
         (f x)))))
 
-(defn bench-both [n x]
+(defn bench-all [n x]
+  (bench prn n x)
   (bench clojure.pprint/pprint n x)
   (bench fipp.edn/pprint n x))
 
@@ -31,12 +34,26 @@
 
   (fipp.edn/pprint (random-map))
 
-  (bench-both 100 (vec (range 1000)))
-  "Elapsed time: 12827.101 msecs"
-  "Elapsed time:  4505.121 msecs"
+  (bench-all 100 (vec (range 1000)))
+;
+;  #<core$prn clojure.core$prn@52305318>
+;  "Elapsed time: 119.552 msecs"
+;
+;  #<pprint$pprint clojure.pprint$pprint@5331429e>
+;  "Elapsed time: 37272.828 msecs"
+;
+;  #<edn$pprint fipp.edn$pprint@2747ac17>
+;  "Elapsed time: 4306.488 msecs"
 
-  (bench-both 1000 (random-map))
-  "Elapsed time: 4412.506 msecs"
-  "Elapsed time: 2732.823 msecs"
+  (bench-all 1000 (random-map))
+;
+;  #<core$prn clojure.core$prn@52305318>
+;  "Elapsed time: 113.016 msecs"
+;
+;  #<pprint$pprint clojure.pprint$pprint@5331429e>
+;  "Elapsed time: 14043.387 msecs"
+;
+;  #<edn$pprint fipp.edn$pprint@2747ac17>
+;  "Elapsed time: 4788.604 msecs"
 
 )
