@@ -152,7 +152,7 @@
 
 ;;; Format the annotated document stream.
 
-(def format-nodes
+(defn format-nodes [coll]
   (t/mapcat-state
     (fn [{:keys [fits length tab-stops column] :as state}
          {:keys [op right] :as node}]
@@ -200,7 +200,8 @@
     {:fits 0
      :length *width*
      :tab-stops '(0) ; Technically, this stack uses unbounded space...
-     :column 0}))
+     :column 0}
+  coll))
 
 
 (defn pprint-document [document options]
