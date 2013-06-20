@@ -273,6 +273,37 @@
     (println "--")
     (pprint-document
       [:group [:pass "<"] "AB" [:pass ">"] :line "B" :line "C"]
-      {:width 6})) 
+      {:width 6}))
+
+  (def ex1
+
+[:group "["
+    [:nest 2
+        [:line ""] "0,"
+        :line "1,"
+        :line "2,"
+        :line "3"
+        [:line ""]]
+    "]"]
+
+   )
+
+  (pprint-document ex1 {:width 20})
+  (pprint-document ex1 {:width 6})
+
+  (def ex2
+
+[:span "["
+    [:align
+        [:group [:line ""]] "0,"
+        [:group :line] "1,"
+        [:group :line] "2,"
+        [:group :line] "3"]
+    "]"]
+
+   )
+
+  (pprint-document ex2 {:width 20})
+  (pprint-document ex2 {:width 6})
 
 )
