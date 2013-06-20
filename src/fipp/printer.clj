@@ -4,7 +4,7 @@
   (:require [clojure.string :as s]
             [clojure.core.reducers :as r]
             [clojure.data.finger-tree :refer (double-list consl ft-concat)]
-            [fipp.transduce :as t]))
+            [transduce.reducers :as t]))
 
 
 ;;; Some double-list (deque / 2-3 finger-tree) utils
