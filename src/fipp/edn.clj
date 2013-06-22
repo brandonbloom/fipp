@@ -12,9 +12,8 @@
   (Integer/toHexString (System/identityHashCode obj)))
 
 (defn pretty-map [m]
-  (let [kvps (map (fn [[k v]]
-                    [:span (-pretty k) " " (-pretty v)])
-                  m)
+  (let [kvps (for [[k v] m]
+               [:span (-pretty k) " " (-pretty v)])
         doc [:group "{" [:align (interpose [:span "," :line] kvps)]  "}"]]
     (if (instance? clojure.lang.IRecord m)
       [:span "#" (-> m class .getName) doc]
