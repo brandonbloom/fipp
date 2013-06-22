@@ -42,6 +42,10 @@
   (-pretty [m]
     (pretty-map m))
 
+  clojure.lang.IPersistentSet
+  (-pretty [s]
+    [:group "#{" [:align (interpose :line (map -pretty s)) ] "}"])
+
   ;;TODO figure out how inheritence is resolved...
   clojure.lang.IRecord
   (-pretty [r]
@@ -83,6 +87,7 @@
     ;(Person. "Brandon" "Bloom")
     ;(atom (range 20))
     ;fut
-    (pprint {:width 30}))
+    #{:foo :bar :baz}
+    (pprint {:width 6}))
 
 )
