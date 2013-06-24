@@ -6,6 +6,10 @@ Like clojure.pprint, this pretty printer has a *linear runtime* and uses
 *bounded space*. However, unlike clojure.pprint, Fipp's implementation is
 functionally pure and its interface is powered by data, not method calls.
 
+The data interface is agnostic to the source language. An EDN printer is
+included with Fipp, but it is easy to create a pretty printer for your
+own language or documents.
+
 
 ## Usage
 
