@@ -97,7 +97,7 @@ you can merge the following into your `~/.lein/profile.clj`
 
 ```clojure
 {:user {:repl-options {:custom-eval (require '[fipp.edn :refer (pprint) :rename {pprint fipp}])}
-        :dependencies [[fipp "0.5.0"]]}}
+        :dependencies [[fipp "0.4.0"]]}}
 ```
 
 
