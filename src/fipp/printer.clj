@@ -79,7 +79,7 @@
   (thread
     (loop [position 0]
       (when-let [node (<!! in)]
-        (condp = (:op node)
+        (case (:op node)
           :text
             (let [position* (+ position (count (:text node)))]
               (>!! out (assoc node :right position*))
@@ -171,7 +171,7 @@
             :column 0}]
       (when-let [{:keys [op right] :as node} (<!! in)]
         (let [indent (peek tab-stops)]
-          (condp = op
+          (case op
             :text
               (let [text (:text node)]
                 (if (zero? column)
