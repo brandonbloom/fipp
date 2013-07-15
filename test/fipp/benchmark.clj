@@ -12,8 +12,8 @@
 
 (defn bench-all [n x]
   (bench prn n x)
-  (bench clojure.pprint/pprint n x)
-  (bench fipp.edn/pprint n x))
+  (bench fipp.edn/pprint n x)
+  (bench clojure.pprint/pprint n x))
 
 (defn random-value []
   (let [f (rand-nth [identity keyword symbol])
@@ -39,21 +39,21 @@
 ;  #<core$prn clojure.core$prn@52305318>
 ;  "Elapsed time: 119.552 msecs"
 ;
-;  #<pprint$pprint clojure.pprint$pprint@5331429e>
-;  "Elapsed time: 37272.828 msecs"
-;
 ;  #<edn$pprint fipp.edn$pprint@2747ac17>
 ;  "Elapsed time: 4306.488 msecs"
+;
+;  #<pprint$pprint clojure.pprint$pprint@5331429e>
+;  "Elapsed time: 37272.828 msecs"
 
   (bench-all 1000 (random-map))
 ;
 ;  #<core$prn clojure.core$prn@52305318>
 ;  "Elapsed time: 113.016 msecs"
 ;
-;  #<pprint$pprint clojure.pprint$pprint@5331429e>
-;  "Elapsed time: 14043.387 msecs"
-;
 ;  #<edn$pprint fipp.edn$pprint@2747ac17>
 ;  "Elapsed time: 4788.604 msecs"
+;
+;  #<pprint$pprint clojure.pprint$pprint@5331429e>
+;  "Elapsed time: 14043.387 msecs"
 
 )
