@@ -222,10 +222,10 @@
 
 (defn pprint-document [document options]
   (binding [*width* (:width options)]
-    (let [c1 (chan)
-          c2 (chan)
-          c3 (chan)
-          c4 (chan)]
+    (let [c1 (chan *width*)
+          c2 (chan *width*)
+          c3 (chan *width*)
+          c4 (chan *width*)]
       (go
         (doseq [x (serialize document)]
           (>! c1 x))
