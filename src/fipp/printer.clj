@@ -3,7 +3,7 @@
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
             [clojure.data.finger-tree :refer (double-list consl ft-concat)]
-            [clojure.core.async :refer (chan go <! >! <!! close!)]))
+            [clojure.core.async :refer (chan thread >!! <!! close!)]))
 
 
 ;;; Some double-list (deque / 2-3 finger-tree) utils
@@ -76,20 +76,20 @@
   (throw (Exception. (str "Unexpected op on node: " node))))
 
 (defn annotate-rights [in out]
-  (go
+  (thread
     (loop [position 0]
-      (when-let [node (<! in)]
+      (when-let [node (<!! in)]
         (condp = (:op node)
           :text
             (let [position* (+ position (count (:text node)))]
-              (>! out (assoc node :right position*))
+              (>!! out (assoc node :right position*))
               (recur position*))
           :line
             (let [position* (+ position (count (:inline node)))]
-              (>! out (assoc node :right position*))
+              (>!! out (assoc node :right position*))
               (recur position*))
           (do
-            (>! out (assoc node :right position))
+            (>!! out (assoc node :right position))
             (recur position)))))
     (close! out)))
 
@@ -105,10 +105,10 @@
   (conjr (pop deque) (apply f (peek deque) args)))
 
 (defn annotate-begins [in out]
-  (go
+  (thread
     (loop [{:keys [position buffers] :as state}
            {:position 0 :buffers empty-deque}]
-      (when-let [{:keys [op right] :as node} (<! in)]
+      (when-let [{:keys [op right] :as node} (<!! in)]
         (if (empty? buffers)
           (if (= op :begin)
             ;; Buffer groups
@@ -117,7 +117,7 @@
               (recur {:position position* :buffers (double-list buffer)}))
             ;; Emit unbuffered
             (do
-              (>! out node)
+              (>!! out node)
               (recur state)))
           (if (= op :end)
             ;; Pop buffer
@@ -128,7 +128,7 @@
               (if (empty? buffers*)
                 (do
                   (doseq [node nodes]
-                    (>! out node))
+                    (>!! out node))
                   (recur {:position 0 :buffers empty-deque}))
                 (let [buffers** (update-right buffers* update-in [:nodes]
                                               ft-concat nodes)]
@@ -148,9 +148,9 @@
                   (let [buffer (first buffers*)
                         buffers** (next buffers*)]
                     ;; Emit buffered
-                    (>! out {:op :begin, :right :too-far})
+                    (>!! out {:op :begin, :right :too-far})
                     (doseq [node (:nodes buffer)]
-                      (>! out node))
+                      (>!! out node))
                     (if (empty? buffers**)
                       ;; Root buffered group
                       {:position 0 :buffers empty-deque}
@@ -163,41 +163,41 @@
 ;;; Format the annotated document stream.
 
 (defn format-nodes [in out]
-  (go
+  (thread
     (loop [{:keys [fits length tab-stops column] :as state}
            {:fits 0
             :length *width*
             :tab-stops (list 0) ; Technically, this stack uses unbounded space...
             :column 0}]
-      (when-let [{:keys [op right] :as node} (<! in)]
+      (when-let [{:keys [op right] :as node} (<!! in)]
         (let [indent (peek tab-stops)]
           (condp = op
             :text
               (let [text (:text node)]
                 (if (zero? column)
                   (do
-                    (>! out (apply str (repeat indent \space)))
-                    (>! out text)
+                    (>!! out (apply str (repeat indent \space)))
+                    (>!! out text)
                     (recur (assoc state :column (+ indent (count text)))))
                   (do
-                    (>! out text)
+                    (>!! out text)
                     (recur (update-in state [:column] + (count text))))))
             :pass
               (do
-                (>! out (:text node))
+                (>!! out (:text node))
                 (recur state))
             :line
               (if (zero? fits)
                 (do
-                  (>! out "\n")
+                  (>!! out "\n")
                   (recur (assoc state :length (- (+ right *width*) indent)
                                       :column 0)))
                 (let [inline (:inline node)]
-                  (>! out inline)
+                  (>!! out inline)
                   (recur (update-in state [:column] + (count inline)))))
             :break
               (do
-                (>! out "\n")
+                (>!! out "\n")
                 (recur (assoc state :length (- (+ right *width*) indent)
                                     :column 0)))
             :nest
@@ -226,9 +226,9 @@
           c2 (chan *width*)
           c3 (chan *width*)
           c4 (chan *width*)]
-      (go
+      (thread
         (doseq [x (serialize document)]
-          (>! c1 x))
+          (>!! c1 x))
         (close! c1))
       (annotate-rights c1 c2)
       (annotate-begins c2 c3)
