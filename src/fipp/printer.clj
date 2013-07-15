@@ -2,9 +2,8 @@
   "See: Oleg Kiselyov, Simon Peyton-Jones, and Amr Sabry
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
-            [clojure.core.reducers :as r]
             [clojure.data.finger-tree :refer (double-list consl ft-concat)]
-            [transduce.reducers :as t]))
+            [clojure.core.async :refer (chan go <! >! <!! close!)]))
 
 
 ;;; Some double-list (deque / 2-3 finger-tree) utils
@@ -76,18 +75,23 @@
 (defn throw-op [node]
   (throw (Exception. (str "Unexpected op on node: " node))))
 
-(def annotate-rights
-  (t/map-state
-    (fn [position node]
-      (case (:op node)
-        :text
-          (let [position* (+ position (count (:text node)))]
-            [position* (assoc node :right position*)])
-        :line
-          (let [position* (+ position (count (:inline node)))]
-            [position* (assoc node :right position*)])
-        [position (assoc node :right position)]))
-    0))
+(defn annotate-rights [in out]
+  (go
+    (loop [position 0]
+      (when-let [node (<! in)]
+        (condp = (:op node)
+          :text
+            (let [position* (+ position (count (:text node)))]
+              (>! out (assoc node :right position*))
+              (recur position*))
+          :line
+            (let [position* (+ position (count (:inline node)))]
+              (>! out (assoc node :right position*))
+              (recur position*))
+          (do
+            (>! out (assoc node :right position))
+            (recur position)))))
+    (close! out)))
 
 
 ;;; Annotate right-side of groups on their :begin nodes.  This includes the
@@ -100,119 +104,140 @@
 (defn update-right [deque f & args]
   (conjr (pop deque) (apply f (peek deque) args)))
 
-(def annotate-begins
-  (t/mapcat-state
-    (fn [{:keys [position buffers] :as state}
-         {:keys [op right] :as node}]
-      (if (empty? buffers)
-        (if (= op :begin)
-          ;; Buffer groups
-          (let [position* (+ right *width*)
-                buffer {:position position* :nodes empty-deque}
-                state* {:position position* :buffers (double-list buffer)}]
-            [state* nil])
-          ;; Emit unbuffered
-          [state [node]])
-        (if (= op :end)
-          ;; Pop buffer
-          (let [buffer (peek buffers)
-                buffers* (pop buffers)
-                begin {:op :begin :right right}
-                nodes (conjlr begin (:nodes buffer) node)]
-            (if (empty? buffers*)
-              [{:position 0 :buffers empty-deque} nodes]
-              (let [buffers** (update-right buffers* update-in [:nodes]
-                                            ft-concat nodes)]
-                [(assoc state :buffers buffers**) nil])))
-          ;; Pruning lookahead
-          (loop [position* position
-                 buffers* (if (= op :begin)
-                            (conjr buffers {:position (+ right *width*)
-                                            :nodes empty-deque})
-                            (update-right buffers update-in [:nodes]
-                                          conjr node))
-                 emit nil]
-            (if (and (<= right position*) (<= (count buffers*) *width*))
-              ;; Not too far
-              [{:position position* :buffers buffers*} emit]
-              ;; Too far
-              (let [buffer (first buffers*)
-                    buffers** (next buffers*)
-                    begin {:op :begin, :right :too-far}
-                    emit* (concat emit [begin] (:nodes buffer))]
-                (if (empty? buffers**)
-                  ;; Root buffered group
-                  [{:position 0 :buffers empty-deque} emit*]
-                  ;; Interior group
-                  (let [position** (:position (first buffers**))]
-                    (recur position** buffers** emit*))))))
-          )))
-    {:position 0 :buffers empty-deque}))
+(defn annotate-begins [in out]
+  (go
+    (loop [{:keys [position buffers] :as state}
+           {:position 0 :buffers empty-deque}]
+      (when-let [{:keys [op right] :as node} (<! in)]
+        (if (empty? buffers)
+          (if (= op :begin)
+            ;; Buffer groups
+            (let [position* (+ right *width*)
+                  buffer {:position position* :nodes empty-deque}]
+              (recur {:position position* :buffers (double-list buffer)}))
+            ;; Emit unbuffered
+            (do
+              (>! out node)
+              (recur state)))
+          (if (= op :end)
+            ;; Pop buffer
+            (let [buffer (peek buffers)
+                  buffers* (pop buffers)
+                  begin {:op :begin :right right}
+                  nodes (conjlr begin (:nodes buffer) node)]
+              (if (empty? buffers*)
+                (do
+                  (doseq [node nodes]
+                    (>! out node))
+                  (recur {:position 0 :buffers empty-deque}))
+                (let [buffers** (update-right buffers* update-in [:nodes]
+                                              ft-concat nodes)]
+                  (recur (assoc state :buffers buffers**)))))
+            ;; Pruning lookahead
+            (recur
+              (loop [position* position
+                     buffers* (if (= op :begin)
+                                (conjr buffers {:position (+ right *width*)
+                                                :nodes empty-deque})
+                                (update-right buffers update-in [:nodes]
+                                              conjr node))]
+                (if (and (<= right position*) (<= (count buffers*) *width*))
+                  ;; Not too far
+                  {:position position* :buffers buffers*}
+                  ;; Too far
+                  (let [buffer (first buffers*)
+                        buffers** (next buffers*)]
+                    ;; Emit buffered
+                    (>! out {:op :begin, :right :too-far})
+                    (doseq [node (:nodes buffer)]
+                      (>! out node))
+                    (if (empty? buffers**)
+                      ;; Root buffered group
+                      {:position 0 :buffers empty-deque}
+                      ;; Interior group
+                      (let [position** (:position (first buffers**))]
+                        (recur position** buffers**)))))))))))
+    (close! out)))
 
 
 ;;; Format the annotated document stream.
 
-(defn format-nodes [coll]
-  (t/mapcat-state
-    (fn [{:keys [fits length tab-stops column] :as state}
-         {:keys [op right] :as node}]
-      (let [indent (peek tab-stops)]
-        (case op
-          :text
-            (let [text (:text node)]
-              (if (zero? column)
-                (let [emit [(apply str (repeat indent \space)) text]
-                      state* (assoc state :column (+ indent (count text)))]
-                  [state* emit])
-                (let [state* (update-in state [:column] + (count text))]
-                  [state* [text]])))
-          :pass
-            [state [(:text node)]]
-          :line
-            (if (zero? fits)
-              (let [state* (assoc state :length (- (+ right *width*) indent)
-                                        :column 0)]
-                [state* ["\n"]])
-              (let [inline (:inline node)
-                    state* (update-in state [:column] + (count inline))]
-                [state* [inline]]))
-          :break
-            (let [state* (assoc state :length (- (+ right *width*) indent)
-                                      :column 0)]
-              [state* ["\n"]])
-          :nest
-            [(update-in state [:tab-stops] conj (+ indent (:offset node))) nil]
-          :align
-            [(update-in state [:tab-stops] conj (+ column (:offset node))) nil]
-          :outdent
-            [(update-in state [:tab-stops] pop) nil]
-          :begin
-            (let [fits* (cond
-                          (pos? fits) (inc fits)
-                          (= right :too-far) 0
-                          (<= right length) 1
-                          :else 0)]
-              [(assoc state :fits fits*) nil])
-          :end
-            (let [fits* (max 0 (dec fits))]
-              [(assoc state :fits fits*) nil])
-          (throw-op node))))
-    {:fits 0
-     :length *width*
-     :tab-stops '(0) ; Technically, this stack uses unbounded space...
-     :column 0}
-  coll))
+(defn format-nodes [in out]
+  (go
+    (loop [{:keys [fits length tab-stops column] :as state}
+           {:fits 0
+            :length *width*
+            :tab-stops (list 0) ; Technically, this stack uses unbounded space...
+            :column 0}]
+      (when-let [{:keys [op right] :as node} (<! in)]
+        (let [indent (peek tab-stops)]
+          (condp = op
+            :text
+              (let [text (:text node)]
+                (if (zero? column)
+                  (do
+                    (>! out (apply str (repeat indent \space)))
+                    (>! out text)
+                    (recur (assoc state :column (+ indent (count text)))))
+                  (do
+                    (>! out text)
+                    (recur (update-in state [:column] + (count text))))))
+            :pass
+              (do
+                (>! out (:text node))
+                (recur state))
+            :line
+              (if (zero? fits)
+                (do
+                  (>! out "\n")
+                  (recur (assoc state :length (- (+ right *width*) indent)
+                                      :column 0)))
+                (let [inline (:inline node)]
+                  (>! out inline)
+                  (recur (update-in state [:column] + (count inline)))))
+            :break
+              (do
+                (>! out "\n")
+                (recur (assoc state :length (- (+ right *width*) indent)
+                                    :column 0)))
+            :nest
+              (recur (update-in state [:tab-stops] conj (+ indent (:offset node))))
+            :align
+              (recur (update-in state [:tab-stops] conj (+ column (:offset node))))
+            :outdent
+              (recur (update-in state [:tab-stops] pop))
+            :begin
+              (let [fits* (cond
+                            (pos? fits) (inc fits)
+                            (= right :too-far) 0
+                            (<= right length) 1
+                            :else 0)]
+                (recur (assoc state :fits fits*)))
+            :end
+              (let [fits* (max 0 (dec fits))]
+                (recur (assoc state :fits fits*)))
+            (throw-op node)))))
+    (close! out)))
 
 
 (defn pprint-document [document options]
   (binding [*width* (:width options)]
-    (->> document
-         serialize
-         annotate-rights
-         annotate-begins
-         format-nodes
-         (t/each print)))
-  (println))
+    (let [c1 (chan)
+          c2 (chan)
+          c3 (chan)
+          c4 (chan)]
+      (go
+        (doseq [x (serialize document)]
+          (>! c1 x))
+        (close! c1))
+      (annotate-rights c1 c2)
+      (annotate-begins c2 c3)
+      (format-nodes c3 c4)
+      (loop []
+        (when-let [x (<!! c4)]
+          (print x)
+          (recur)))
+      (println))))
 
 (defmacro defprinter [name document-fn defaults]
   `(defn ~name
