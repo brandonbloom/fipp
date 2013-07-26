@@ -3,15 +3,15 @@
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
             [clojure.core.reducers :as r]
-            [clojure.data.finger-tree :refer (double-list consl ft-concat)]
+            [clojure.core.rrb-vector :as fv]
             [transduce.reducers :as t]))
 
 
-;;; Some double-list (deque / 2-3 finger-tree) utils
+;;; Some deque utils (using RRB trees)
 
-(def empty-deque (double-list))
+(def empty-deque [])
 
-(def conjl (fnil consl empty-deque))
+(def conjl (fn [deque x] (fv/catvec [x] (or deque []))))
 (def conjr (fnil conj empty-deque))
 
 (defn conjlr [l deque r]
@@ -109,7 +109,7 @@
           ;; Buffer groups
           (let [position* (+ right *width*)
                 buffer {:position position* :nodes empty-deque}
-                state* {:position position* :buffers (double-list buffer)}]
+                state* {:position position* :buffers [buffer]}]
             [state* nil])
           ;; Emit unbuffered
           [state [node]])
@@ -122,7 +122,7 @@
             (if (empty? buffers*)
               [{:position 0 :buffers empty-deque} nodes]
               (let [buffers** (update-right buffers* update-in [:nodes]
-                                            ft-concat nodes)]
+                                            fv/catvec nodes)]
                 [(assoc state :buffers buffers**) nil])))
           ;; Pruning lookahead
           (loop [position* position
@@ -137,7 +137,7 @@
               [{:position position* :buffers buffers*} emit]
               ;; Too far
               (let [buffer (first buffers*)
-                    buffers** (next buffers*)
+                    buffers** (fv/subvec buffers* 1)
                     begin {:op :begin, :right :too-far}
                     emit* (concat emit [begin] (:nodes buffer))]
                 (if (empty? buffers**)
