@@ -3,15 +3,18 @@
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
             [clojure.core.reducers :as r]
-            [clojure.data.finger-tree :refer (double-list consl ft-concat)]
-            [transduce.reducers :as t]))
+            [cljs.core.rrb-vector :as fv]
+            ;; TODO: I'd like to switch back to transduce.reducers
+            ;; but cljs.core.LazySeq must implement cljs.core.IReduce,
+            ;; Currently (r/reduce + (map inc [1 2 3])) throws...
+            [transduce.lazy :as t]))
 
 
-;;; Some double-list (deque / 2-3 finger-tree) utils
+;;; Some deque utils (using RRB trees)
 
-(def empty-deque (double-list))
+(def empty-deque [])
 
-(def conjl (fnil consl empty-deque))
+(def conjl (fn [deque x] (fv/catvec [x] (or deque []))))
 (def conjr (fnil conj empty-deque))
 
 (defn conjlr [l deque r]
@@ -29,10 +32,9 @@
     (string? doc) [{:op :text, :text doc}]
     (keyword? doc) (serialize-node [doc])
     (vector? doc) (serialize-node doc)
-    :else (throw (Exception.
-                   (str "Unexpected class for doc node: " (class doc))))))
+    :else (throw (js/Error. (str "Unexpected class for doc node: " (type doc))))))
 
-;; Primitives
+;; ;; Primitives
 
 (defmethod serialize-node :text [[_ & text]]
   [{:op :text, :text (apply str text)}])
@@ -74,9 +76,10 @@
 ;;; used by subsequent passes to produce the final layout.
 
 (defn throw-op [node]
-  (throw (Exception. (str "Unexpected op on node: " node))))
+  (throw (js/Error. (str "Unexpected op on node: " node))))
 
-(def annotate-rights
+;; TODO: use transduce/reducers
+(defn annotate-rights [coll]
   (t/map-state
     (fn [position node]
       (case (:op node)
@@ -87,7 +90,8 @@
           (let [position* (+ position (count (:inline node)))]
             [position* (assoc node :right position*)])
         [position (assoc node :right position)]))
-    0))
+    0
+    coll))
 
 
 ;;; Annotate right-side of groups on their :begin nodes.  This includes the
@@ -100,7 +104,8 @@
 (defn update-right [deque f & args]
   (conjr (pop deque) (apply f (peek deque) args)))
 
-(def annotate-begins
+;; TODO: use transduce/reducers
+(defn annotate-begins [coll]
   (t/mapcat-state
     (fn [{:keys [position buffers] :as state}
          {:keys [op right] :as node}]
@@ -109,7 +114,7 @@
           ;; Buffer groups
           (let [position* (+ right *width*)
                 buffer {:position position* :nodes empty-deque}
-                state* {:position position* :buffers (double-list buffer)}]
+                state* {:position position* :buffers [buffer]}]
             [state* nil])
           ;; Emit unbuffered
           [state [node]])
@@ -122,7 +127,7 @@
             (if (empty? buffers*)
               [{:position 0 :buffers empty-deque} nodes]
               (let [buffers** (update-right buffers* update-in [:nodes]
-                                            ft-concat nodes)]
+                                            fv/catvec nodes)]
                 [(assoc state :buffers buffers**) nil])))
           ;; Pruning lookahead
           (loop [position* position
@@ -137,7 +142,7 @@
               [{:position position* :buffers buffers*} emit]
               ;; Too far
               (let [buffer (first buffers*)
-                    buffers** (next buffers*)
+                    buffers** (fv/subvec buffers* 1)
                     begin {:op :begin, :right :too-far}
                     emit* (concat emit [begin] (:nodes buffer))]
                 (if (empty? buffers**)
@@ -147,7 +152,8 @@
                   (let [position** (:position (first buffers**))]
                     (recur position** buffers** emit*))))))
           )))
-    {:position 0 :buffers empty-deque}))
+    {:position 0 :buffers empty-deque}
+    coll))
 
 
 ;;; Format the annotated document stream.
@@ -214,96 +220,3 @@
          (t/each print)))
   (println))
 
-(defmacro defprinter [name document-fn defaults]
-  `(defn ~name
-     ([~'document] (~name ~'document ~defaults))
-     ([~'document ~'options]
-       (pprint-document (~document-fn ~'document) ~'options))))
-
-
-(comment
-
-  (defn dbg [x]
-    (println "DBG:")
-    (clojure.pprint/pprint x)
-    (println "----")
-    x)
-
-  (serialize "apple")
-  (serialize [:text "apple" "ball"])
-  (serialize [:span "apple" [:group "ball" :line "cat"]])
-  (serialize [:span "apple" [:line ","] "ball"])
-
-  (def doc1 [:group "A" :line [:group "B" :line "C"]])
-  (serialize doc1)
-
-  (defn map-dbg [prefix coll]
-    (r/map (fn [x]
-             (print prefix)
-             (prn x)
-             x)
-           coll))
-
-  (def doc2 [:group "A" :line [:nest 2 "B" :line "C"] :line "D"])
-  (def doc3 [:group "A" :line [:nest 2 "B-XYZ" [:align -3 :line "C"]] :line "D"])
-
-  (binding [*width* 3]
-    (->> doc3
-         serialize
-         ;(map-dbg "node: ")
-         annotate-rights
-         annotate-begins
-         format-nodes
-         ;clojure.pprint/pprint
-         (t/each print)
-         ;(into [])
-         )
-    ;nil
-    )
-
-  ;; test of :pass op
-  (do
-    (pprint-document
-      [:group "AB" :line "B" :line "C"]
-      {:width 6}) 
-    (println "--")
-    (pprint-document
-      [:group "<AB>" :line "B" :line "C"]
-      {:width 6}) 
-    (println "--")
-    (pprint-document
-      [:group [:pass "<"] "AB" [:pass ">"] :line "B" :line "C"]
-      {:width 6}))
-
-  (def ex1
-
-[:group "["
-    [:nest 2
-        [:line ""] "0,"
-        :line "1,"
-        :line "2,"
-        :line "3"
-        [:line ""]]
-    "]"]
-
-   )
-
-  (pprint-document ex1 {:width 20})
-  (pprint-document ex1 {:width 6})
-
-  (def ex2
-
-[:span "["
-    [:align
-        [:group [:line ""]] "0,"
-        [:group :line] "1,"
-        [:group :line] "2,"
-        [:group :line] "3"]
-    "]"]
-
-   )
-
-  (pprint-document ex2 {:width 20})
-  (pprint-document ex2 {:width 6})
-
-)

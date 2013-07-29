@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ "${V8_HOME}" = "" ]; then
+    echo "V8_HOME not set, cannot run tests"
+    exit 1
+fi
+
+rm -rf out
+mkdir -p out
+lein cljsbuild once test
+echo "Launching test runner..."
+"${V8_HOME}/d8" out/test.js
