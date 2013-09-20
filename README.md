@@ -85,7 +85,7 @@ Fipp artifacts are [published on Clojars](https://clojars.org/fipp).
 To depend on this version with Lein, add the following to your `project.clj`:
 
 ```clojure
-[fipp "0.4.0"]
+[fipp "0.4.1"]
 ```
 
 Please note that Fipp requires Clojure 1.5.1 for access to the latest Reducers bits.
