@@ -37,6 +37,9 @@
 (defmethod serialize-node :text [[_ & text]]
   [{:op :text, :text (apply str text)}])
 
+(defmethod serialize-node :data [[_ data]]
+  [{:op :data, :data data}])
+
 (defmethod serialize-node :pass [[_ & text]]
   [{:op :pass, :text (apply str text)}])
 
@@ -76,17 +79,18 @@
 (defn throw-op [node]
   (throw (Exception. (str "Unexpected op on node: " node))))
 
+(defmulti node-size #(:op %))
+
+(defmethod node-size :default [node] 0)
+(defmethod node-size :text    [node] (count (:text node)))
+(defmethod node-size :line    [node] (count (:inline node)))
+(defmethod node-size :data    [node] (count (get-in node [:data :text])))
+
 (def annotate-rights
   (t/map-state
     (fn [position node]
-      (case (:op node)
-        :text
-          (let [position* (+ position (count (:text node)))]
-            [position* (assoc node :right position*)])
-        :line
-          (let [position* (+ position (count (:inline node)))]
-            [position* (assoc node :right position*)])
-        [position (assoc node :right position)]))
+      (let [position* (+ position (node-size node))]
+        [position* (assoc node :right position*)]))
     0))
 
 
@@ -145,74 +149,128 @@
                   [{:position 0 :buffers empty-deque} emit*]
                   ;; Interior group
                   (let [position** (:position (first buffers**))]
-                    (recur position** buffers** emit*))))))
-          )))
+                    (recur position** buffers** emit*)))))))))
     {:position 0 :buffers empty-deque}))
 
 
 ;;; Format the annotated document stream.
 
-(defn format-nodes [coll]
+(defmulti format-node #(:op %2))
+
+(defmethod format-node :default [state node] (throw-op node))
+
+(defmethod format-node :text
+  [{:keys [fits length tab-stops column] :as state}
+   {:keys [op right text] :as node}]
+  (let [indent  (peek tab-stops)]
+    (if (zero? column)
+      (let [emit    [(apply str (repeat indent \space)) text]
+            state*  (-> state
+                        (assoc :column 0)
+                        (update-in [:column] + indent (count text)))]
+        [state* emit])
+      (let [state* (update-in state [:column] + (count text))]
+        [state* [text]]))))
+
+(defmethod format-node :data
+  [{:keys [fits length tab-stops column] :as state}
+   {:keys [op right data] :as node}]
+  (let [text    (:text data)
+        indent  (peek tab-stops)]
+    (if (zero? column)
+      (let [emit    [(apply str (repeat indent \space)) data]
+            state*  (-> state
+                        (assoc :column 0)
+                        (update-in [:column] + indent (count text)))]
+        [state* emit])
+      (let [state* (update-in state [:column] + (count text))]
+        [state* [data]]))))
+
+(defmethod format-node :line
+  [{:keys [fits length tab-stops column] :as state}
+   {:keys [op right text] :as node}]
+  (let [indent (peek tab-stops)]
+    (if (zero? fits)
+      (let [state* (assoc state :length (- (+ right *width*) indent) :column 0)]
+        [state* ["\n"]])
+      (let [inline (:inline node)
+            state* (update-in state [:column] + (count inline))]
+        [state* [inline]]))))
+
+(defmethod format-node :nest
+  [{:keys [fits length tab-stops column] :as state}
+   {:keys [op right text] :as node}]
+  (let [indent (peek tab-stops)]
+    [(update-in state [:tab-stops] conj (+ indent (:offset node))) nil]))
+
+(defmethod format-node :align
+  [{:keys [fits length tab-stops column] :as state}
+   {:keys [op right text] :as node}]
+  (let [indent (peek tab-stops)]
+    [(update-in state [:tab-stops] conj (+ column (:offset node))) nil]))
+
+(defmethod format-node :outdent
+  [{:keys [fits length tab-stops column] :as state}
+   {:keys [op right text] :as node}]
+  (let [indent (peek tab-stops)]
+    [(update-in state [:tab-stops] pop) nil]))
+
+(defmethod format-node :begin
+  [{:keys [fits length tab-stops column] :as state}
+   {:keys [op right text] :as node}]
+  (let [indent  (peek tab-stops)
+        fits*   (if-not (zero? fits)
+                  (inc fits)
+                  (cond (= right :too-far)  0
+                        (<= right length)   1
+                        :else               0))]
+    [(assoc state :fits fits*) nil]))
+
+(defmethod format-node :end
+  [{:keys [fits length tab-stops column] :as state}
+   {:keys [op right text] :as node}]
+  (let [indent  (peek tab-stops)
+        fits*   (if (zero? fits) 0 (dec fits))]
+    [(assoc state :fits fits*) nil]))
+
+(defmethod format-node :pass
+  [{:keys [fits length tab-stops column] :as state}
+   {:keys [op right text] :as node}]
+  [state [text]])
+
+(defmethod format-node :break
+  [{:keys [fits length tab-stops column] :as state}
+   {:keys [op right text] :as node}]
+  (let [indent (peek tab-stops)
+        state* (assoc state :length (- (+ right *width*) indent) :column 0)]
+    [state* ["\n"]]))
+
+(def format-nodes
   (t/mapcat-state
-    (fn [{:keys [fits length tab-stops column] :as state}
-         {:keys [op right] :as node}]
-      (let [indent (peek tab-stops)]
-        (case op
-          :text
-            (let [text (:text node)]
-              (if (zero? column)
-                (let [emit [(apply str (repeat indent \space)) text]
-                      state* (assoc state :column (+ indent (count text)))]
-                  [state* emit])
-                (let [state* (update-in state [:column] + (count text))]
-                  [state* [text]])))
-          :pass
-            [state [(:text node)]]
-          :line
-            (if (zero? fits)
-              (let [state* (assoc state :length (- (+ right *width*) indent)
-                                        :column 0)]
-                [state* ["\n"]])
-              (let [inline (:inline node)
-                    state* (update-in state [:column] + (count inline))]
-                [state* [inline]]))
-          :break
-            (let [state* (assoc state :length (- (+ right *width*) indent)
-                                      :column 0)]
-              [state* ["\n"]])
-          :nest
-            [(update-in state [:tab-stops] conj (+ indent (:offset node))) nil]
-          :align
-            [(update-in state [:tab-stops] conj (+ column (:offset node))) nil]
-          :outdent
-            [(update-in state [:tab-stops] pop) nil]
-          :begin
-            (let [fits* (cond
-                          (pos? fits) (inc fits)
-                          (= right :too-far) 0
-                          (<= right length) 1
-                          :else 0)]
-              [(assoc state :fits fits*) nil])
-          :end
-            (let [fits* (max 0 (dec fits))]
-              [(assoc state :fits fits*) nil])
-          (throw-op node))))
+    format-node
     {:fits 0
      :length *width*
      :tab-stops '(0) ; Technically, this stack uses unbounded space...
-     :column 0}
-  coll))
+     :column 0}))
 
-
-(defn pprint-document [document options]
+(defn emit-document [document options]
   (binding [*width* (:width options)]
     (->> document
          serialize
          annotate-rights
          annotate-begins
          format-nodes
-         (t/each print)))
+         (into []))))
+
+(defn pprint-document [document options]
+  (->> (emit-document document options) (t/each print))
   (println))
+
+(defmacro defemitter [name document-fn defaults]
+  `(defn ~name
+     ([~'document] (~name ~'document ~defaults))
+     ([~'document ~'options]
+       (emit-document (~document-fn ~'document) ~'options))))
 
 (defmacro defprinter [name document-fn defaults]
   `(defn ~name
