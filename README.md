@@ -23,7 +23,10 @@ own language or documents.
 (fipp (range 20) {:width 10})
 ```
 
-Currently, `:width` is the only option and defaults to 70.
+The available options are:
+
+- `:width` defaults to `70`.
+- `:print-meta` defaults to `clojure.cor/*print-meta*`.
 
 
 ## Fast!
