@@ -26,7 +26,7 @@ own language or documents.
 The available options are:
 
 - `:width` defaults to `70`.
-- `:print-meta` defaults to `clojure.cor/*print-meta*`.
+- `:print-meta` defaults to `clojure.core/*print-meta*`.
 
 
 ## Fast!
