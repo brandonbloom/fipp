@@ -71,10 +71,12 @@
   )
 
 (defn pprint
-  ([x] (pprint x {:width 70 :print-meta *print-meta*}))
+  ([x] (pprint x {}))
   ([x options]
    (binding [*print-meta* false]
-     (pprint-document (pretty x) options))))
+     (pprint-document (pretty x)
+                      (merge {:width 70 :print-meta *print-meta*}
+                             options)))))
 
 (comment
 
