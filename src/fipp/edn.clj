@@ -8,21 +8,21 @@
 (defprotocol IPretty
   (-pretty [x]))
 
+(defn pretty [x]
+  (if-let [m (and *print-meta* (meta x))]
+    [:group [:span "^" (-pretty m)] :line (-pretty x)]
+    (-pretty x)))
+
 (defn system-id [obj]
   (Integer/toHexString (System/identityHashCode obj)))
 
-(defn pretty-meta [x v]
-  (if-let [m (and *print-meta* (meta x))]
-    [:group [:group "^" (-pretty m)] " " v]
-    v))
-
 (defn pretty-map [m]
   (let [kvps (for [[k v] m]
-               [:span (-pretty k) " " (-pretty v)])
+               [:span (pretty k) " " (pretty v)])
         doc [:group "{" [:align (interpose [:span "," :line] kvps)]  "}"]]
-    (pretty-meta m (if (instance? clojure.lang.IRecord m)
-                     [:span "#" (-> m class .getName) doc]
-                     doc))))
+    (if (instance? clojure.lang.IRecord m)
+      [:span "#" (-> m class .getName) doc]
+      doc)))
 
 (extend-protocol IPretty
 
@@ -32,16 +32,15 @@
 
   java.lang.Object
   (-pretty [x]
-    ;; an IPretty implementation on IMeta would be ambiguous
-    (pretty-meta x [:text (pr-str x)]))
+    [:text (pr-str x)])
 
   clojure.lang.IPersistentVector
   (-pretty [v]
-    (pretty-meta v [:group "[" [:align (interpose :line (map -pretty v))] "]"]))
+    [:group "[" [:align (interpose :line (map pretty v))] "]"])
 
   clojure.lang.ISeq
   (-pretty [s]
-    (pretty-meta s [:group "(" [:align (interpose :line (map -pretty s))] ")"]))
+    [:group "(" [:align (interpose :line (map pretty s))] ")"])
 
   clojure.lang.IPersistentMap
   (-pretty [m]
@@ -49,8 +48,7 @@
 
   clojure.lang.IPersistentSet
   (-pretty [s]
-    (pretty-meta
-     s [:group "#{" [:align (interpose :line (map -pretty s)) ] "}"]))
+    [:group "#{" [:align (interpose :line (map pretty s)) ] "}"])
 
   ;;TODO figure out how inheritence is resolved...
   clojure.lang.IRecord
@@ -59,21 +57,18 @@
 
   clojure.lang.Atom
   (-pretty [a]
-    (pretty-meta a [:span "#<Atom@" (system-id a) " " (-pretty @a) ">"]))
+    [:span "#<Atom@" (system-id a) " " (pretty @a) ">"])
 
   java.util.concurrent.Future
   (-pretty [f]
     (let [value (if (future-done? f)
-                  (-pretty @f)
+                  (pretty @f)
                   ":pending")]
-      (pretty-meta f [:span "#<Future@" (system-id f) " " value ">"])))
+      [:span "#<Future@" (system-id f) " " value ">"]))
 
   ;TODO clojure.lang.PersistentQueue, lots more stuff too
 
   )
-
-(defn pretty [x]
-  (-pretty x))
 
 (defprinter pprint pretty
   {:width 70})
