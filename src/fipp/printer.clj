@@ -94,8 +94,7 @@
 ;;; pruning algorithm which will annotate some :begin nodes as being :too-far
 ;;; to the right without calculating their exact sizes.
 
-;;TODO get rid of this dynamic var
-(def ^:dynamic *width* 70)
+(def ^:dynamic *options* {:width 70})
 
 (defn update-right [deque f & args]
   (conjr (pop deque) (apply f (peek deque) args)))
@@ -107,7 +106,7 @@
       (if (empty? buffers)
         (if (= op :begin)
           ;; Buffer groups
-          (let [position* (+ right *width*)
+          (let [position* (+ right (:width *options*))
                 buffer {:position position* :nodes empty-deque}
                 state* {:position position* :buffers (double-list buffer)}]
             [state* nil])
@@ -125,27 +124,28 @@
                                             ft-concat nodes)]
                 [(assoc state :buffers buffers**) nil])))
           ;; Pruning lookahead
-          (loop [position* position
-                 buffers* (if (= op :begin)
-                            (conjr buffers {:position (+ right *width*)
-                                            :nodes empty-deque})
-                            (update-right buffers update-in [:nodes]
-                                          conjr node))
-                 emit nil]
-            (if (and (<= right position*) (<= (count buffers*) *width*))
-              ;; Not too far
-              [{:position position* :buffers buffers*} emit]
-              ;; Too far
-              (let [buffer (first buffers*)
-                    buffers** (next buffers*)
-                    begin {:op :begin, :right :too-far}
-                    emit* (concat emit [begin] (:nodes buffer))]
-                (if (empty? buffers**)
-                  ;; Root buffered group
-                  [{:position 0 :buffers empty-deque} emit*]
-                  ;; Interior group
-                  (let [position** (:position (first buffers**))]
-                    (recur position** buffers** emit*))))))
+          (let [width (:width *options*)]
+            (loop [position* position
+                   buffers* (if (= op :begin)
+                              (conjr buffers {:position (+ right width)
+                                              :nodes empty-deque})
+                              (update-right buffers update-in [:nodes]
+                                            conjr node))
+                   emit nil]
+              (if (and (<= right position*) (<= (count buffers*) width))
+                ;; Not too far
+                [{:position position* :buffers buffers*} emit]
+                ;; Too far
+                (let [buffer (first buffers*)
+                      buffers** (next buffers*)
+                      begin {:op :begin, :right :too-far}
+                      emit* (concat emit [begin] (:nodes buffer))]
+                  (if (empty? buffers**)
+                    ;; Root buffered group
+                    [{:position 0 :buffers empty-deque} emit*]
+                    ;; Interior group
+                    (let [position** (:position (first buffers**))]
+                      (recur position** buffers** emit*)))))))
           )))
     {:position 0 :buffers empty-deque}))
 
@@ -156,7 +156,8 @@
   (t/mapcat-state
     (fn [{:keys [fits length tab-stops column] :as state}
          {:keys [op right] :as node}]
-      (let [indent (peek tab-stops)]
+      (let [indent (peek tab-stops)
+            width (:width *options*)]
         (case op
           :text
             (let [text (:text node)]
@@ -170,14 +171,14 @@
             [state [(:text node)]]
           :line
             (if (zero? fits)
-              (let [state* (assoc state :length (- (+ right *width*) indent)
+              (let [state* (assoc state :length (- (+ right width) indent)
                                         :column 0)]
                 [state* ["\n"]])
               (let [inline (:inline node)
                     state* (update-in state [:column] + (count inline))]
                 [state* [inline]]))
           :break
-            (let [state* (assoc state :length (- (+ right *width*) indent)
+            (let [state* (assoc state :length (- (+ right width) indent)
                                       :column 0)]
               [state* ["\n"]])
           :nest
@@ -198,14 +199,14 @@
               [(assoc state :fits fits*) nil])
           (throw-op node))))
     {:fits 0
-     :length *width*
+     :length (:width *options*)
      :tab-stops '(0) ; Technically, this stack uses unbounded space...
      :column 0}
   coll))
 
 
 (defn pprint-document [document options]
-  (binding [*width* (:width options)]
+  (binding [*options* options]
     (->> document
          serialize
          annotate-rights
@@ -213,12 +214,6 @@
          format-nodes
          (t/each print)))
   (println))
-
-(defmacro defprinter [name document-fn defaults]
-  `(defn ~name
-     ([~'document] (~name ~'document ~defaults))
-     ([~'document ~'options]
-       (pprint-document (~document-fn ~'document) ~'options))))
 
 
 (comment
@@ -247,7 +242,7 @@
   (def doc2 [:group "A" :line [:nest 2 "B" :line "C"] :line "D"])
   (def doc3 [:group "A" :line [:nest 2 "B-XYZ" [:align -3 :line "C"]] :line "D"])
 
-  (binding [*width* 3]
+  (binding [*options* {:width 3}]
     (->> doc3
          serialize
          ;(map-dbg "node: ")

@@ -58,7 +58,7 @@ The offset is optional:
 
 ## Custom Dispatch
 
-Write a `pretty` function and use `defprinter`.
+Write a `pretty` function and use `print-document`.
 
 TODO: More docs here!  Until then, see `src/fipp/edn.clj`.
 

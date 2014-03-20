@@ -1,7 +1,7 @@
 (ns fipp.edn
   "Provides a pretty document serializer and pprint fn for Clojure/EDN forms.
   See fipp.clojure for pretty printing Clojure code."
-  (:require [fipp.printer :as printer :refer (defprinter)]))
+  (:require [fipp.printer :as printer :refer (pprint-document *options*)]))
 
 ;;TODO Figure out what belongs in clojure.clj instead of edn.clj
 
@@ -9,8 +9,8 @@
   (-pretty [x]))
 
 (defn pretty [x]
-  (if-let [m (and *print-meta* (meta x))]
-    [:group [:span "^" (-pretty m)] :line (-pretty x)]
+  (if-let [m (and (:print-meta *options*) (meta x))]
+    [:align [:span "^" (-pretty m)] :line (-pretty x)]
     (-pretty x)))
 
 (defn system-id [obj]
@@ -70,8 +70,11 @@
 
   )
 
-(defprinter pprint pretty
-  {:width 70})
+(defn pprint
+  ([x] (pprint x {:width 70 :print-meta *print-meta*}))
+  ([x options]
+   (binding [*print-meta* false]
+     (pprint-document (pretty x) options))))
 
 (comment
 
@@ -82,13 +85,14 @@
   (->
     ;(list 1 2 3 4 [:a :b :c :d] 5 6 7 8 9)
     ;{:foo 1 :bar \c :baz "str"}
-    ;{:small-value [1 2 3]
-    ; :larger-value {:some-key "foo"
-    ;                :some-other-key "bar"}}
+    {:small-value [1 2 3]
+     :larger-value ^{:some "meta" :and "such"}
+                   {:some-key "foo"
+                    :some-other-key "bar"}}
     ;(Person. "Brandon" "Bloom")
     ;(atom (range 20))
     ;fut
-    #{:foo :bar :baz}
-    (pprint {:width 6}))
+    ;#{:foo :bar :baz}
+    (pprint {:width 30 :print-meta true}))
 
 )
