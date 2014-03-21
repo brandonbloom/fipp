@@ -73,10 +73,9 @@
 (defn pprint
   ([x] (pprint x {}))
   ([x options]
-   (binding [*print-meta* false]
-     (pprint-document (pretty x)
-                      (merge {:width 70 :print-meta *print-meta*}
-                             options)))))
+   (let [options* (merge {:width 70 :print-meta *print-meta*} options)]
+     (binding [*print-meta* false]
+       (pprint-document (pretty x) options*)))))
 
 (comment
 
@@ -84,6 +83,7 @@
 
   (def fut (future 1))
 
+  (binding [*print-meta* true]
   (->
     ;(list 1 2 3 4 [:a :b :c :d] 5 6 7 8 9)
     ;{:foo 1 :bar \c :baz "str"}
@@ -95,6 +95,6 @@
     ;(atom (range 20))
     ;fut
     ;#{:foo :bar :baz}
-    (pprint {:width 30 :print-meta true}))
+    (pprint {:width 30})))
 
 )
