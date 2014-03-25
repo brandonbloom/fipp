@@ -79,7 +79,7 @@
                          p/annotate-begins
                          (log :out))]
       (is (= (do ;; page width 3
-               (binding [p/*width* 3]
+               (binding [p/*options* {:width 3}]
                  (into [] pipeline))
                @acc)
              [; trHPP: read: GBeg 0
