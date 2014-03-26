@@ -206,7 +206,7 @@
 
 
 (defn pprint-document [document options]
-  (binding [*options* options]
+  (binding [*options* (merge *options* options)]
     (->> document
          serialize
          annotate-rights
