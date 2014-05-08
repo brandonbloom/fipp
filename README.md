@@ -126,3 +126,11 @@ you can merge the following into your `~/.lein/profile.clj`
 Copyright © 2013 Brandon Bloom
 
 Distributed under the Eclipse Public License, the same as Clojure.
+
+
+## Acknowledgements
+
+Fipp is fast in part thanks to [YourKit's Java Profiler][1].
+
+
+[1]: http://www.yourkit.com/java/profiler/index.jsp
