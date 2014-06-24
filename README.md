@@ -93,22 +93,17 @@ To depend on this version with Lein, add the following to your `project.clj`:
 
 Please note that Fipp requires Clojure 1.5.1 for access to the latest Reducers bits.
 
-### nREPL Integration
+### Colorization & REPL Integration
 
-If you want Fipp at your fingertips for all of your lein projects,
-you can merge the following into your `~/.lein/profile.clj`
+[Puget][2] uses Fipp's engine to provide an alternative, colorizing printer.
 
-```clojure
-{:user {:repl-options {:custom-eval (require '[fipp.edn :refer (pprint) :rename {pprint fipp}])}
-        :dependencies [[fipp "0.4.0"]]}}
-```
-
+[Whidbey][3] integrates Puget in to nREPL via Leinigen, so that every
+evaluation pretty prints in color.
 
 ## TODO
 
 #### No Brainers
 
-- Tests!! I've only really tried this on a limited number of simple forms.
 - Clojure code-dispatch (right now we're only EDN)
 - Limit print depth
 - Limit lines printed
@@ -134,3 +129,5 @@ Fipp is fast in part thanks to [YourKit's Java Profiler][1].
 
 
 [1]: http://www.yourkit.com/java/profiler/index.jsp
+[2]: https://github.com/greglook/puget
+[3]: https://github.com/greglook/whidbey
