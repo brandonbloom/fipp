@@ -3,7 +3,7 @@
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
             [clojure.core.reducers :as r]
-            [clojure.data.finger-tree :refer (double-list consl ft-concat)]
+            [clojure.data.finger-tree :as ftree :refer (double-list ft-concat)]
             [transduce.reducers :as t]))
 
 
@@ -11,7 +11,7 @@
 
 (def empty-deque (double-list))
 
-(def conjl (fnil consl empty-deque))
+(def conjl (fnil ftree/conjl empty-deque))
 (def conjr (fnil conj empty-deque))
 
 (defn conjlr [l deque r]
