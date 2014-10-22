@@ -66,7 +66,7 @@
 
 ;;; Format defn, fn, and similar
 
-(defn pretty-fn-clause [[params & body] ctx]
+(defn pretty-method [[params & body] ctx]
   (list-group
     (-pretty params ctx) :line
     (block (map #(pretty % ctx) body))))
@@ -85,7 +85,7 @@
                      (when attr-map  [(-pretty attr-map ctx)])
                      (when params-after-attr-map? [(-pretty params ctx)])
                      (if body (map #(pretty % ctx) body)
-                              (map #(pretty-fn-clause % ctx) more)))))))
+                              (map #(pretty-method % ctx) more)))))))
 
 (defn pretty-fn [[head & more] ctx]
   (let [[fn-name more] (maybe-a symbol? more)
@@ -96,7 +96,7 @@
               (when params  [" " (-pretty params ctx)]))
       :line
       (block (if body (map #(pretty % ctx) body)
-                      (map #(pretty-fn-clause % ctx) more))))))
+                      (map #(pretty-method % ctx) more))))))
 
 (defn pretty-fn* [[_ params body :as form] ctx]
   (if (and (vector? params) (seq? body))
@@ -144,17 +144,17 @@
     (-pretty head ctx) " " (pretty-bindings bvec ctx) :line
     (block (map #(pretty % ctx) body))))
 
-;;; Code dispatch
+;;; Symbol table
 
-(defn build-code-table [dispatch]
+(defn build-symbol-map [dispatch]
   (into {} (for [[pretty-fn syms] dispatch
                  sym syms
                  sym (cons sym (when-not (special-symbol? sym)
                                  [(symbol "clojure.core" (name sym))]))]
              [sym pretty-fn])))
 
-(def default-code-table
-  (build-code-table
+(def default-symbols
+  (build-symbol-map
     {pretty-arrow '[. .. -> ->> and doto or some-> some->>]
      pretty-case  '[case cond-> cond->>]
      pretty-cond  '[cond]
@@ -184,7 +184,7 @@
 
   clojure.lang.ISeq
   (-pretty [s ctx]
-    (if-let [pretty-special (get (:code-table ctx) (first s))]
+    (if-let [pretty-special (get (:symbols ctx) (first s))]
       (pretty-special s ctx)
       (list-group [:align 1 (interpose :line (map #(pretty % ctx) s))])))
 
@@ -208,8 +208,8 @@
 (defn pprint
   ([x] (pprint x {}))
   ([x options]
-   (let [code-table (merge default-code-table (:code-table options))
-         ctx (merge {:code-table code-table, :print-meta *print-meta*}
-                    (dissoc options :code-table))]
+   (let [symbols (merge default-symbols (:symbols options))
+         ctx (merge {:symbols symbols :print-meta *print-meta*}
+                    (dissoc options :symbols))]
      (binding [*print-meta* false]
        (pprint-document (pretty x ctx) options)))))
