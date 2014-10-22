@@ -16,14 +16,6 @@
 (defn system-id [obj]
   (Integer/toHexString (System/identityHashCode obj)))
 
-(defn pretty-map [m ctx]
-  (let [kvps (for [[k v] m]
-               [:span (-pretty k ctx) " " (pretty v ctx)])
-        doc [:group "{" [:align (interpose [:span "," :line] kvps)]  "}"]]
-    (if (record? m)
-      [:span "#" (-> m class .getName) doc]
-      doc)))
-
 (extend-protocol IPretty
 
   nil
@@ -44,16 +36,16 @@
 
   clojure.lang.IPersistentMap
   (-pretty [m ctx]
-    (pretty-map m ctx))
+    (let [kvps (for [[k v] m]
+                 [:span (-pretty k ctx) " " (pretty v ctx)])
+          doc [:group "{" [:align (interpose [:span "," :line] kvps)]  "}"]]
+      (if (record? m)
+        [:span "#" (-> m class .getName) doc]
+        doc)))
 
   clojure.lang.IPersistentSet
   (-pretty [s ctx]
     [:group "#{" [:align (interpose :line (map #(pretty % ctx) s)) ] "}"])
-
-  ;;TODO figure out how inheritence is resolved...
-  clojure.lang.IRecord
-  (-pretty [r ctx]
-    (pretty-map r ctx))
 
   clojure.lang.Atom
   (-pretty [a ctx]

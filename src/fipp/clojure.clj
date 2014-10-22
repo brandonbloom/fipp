@@ -147,13 +147,11 @@
 ;;; Code dispatch
 
 (defn build-code-table [dispatch]
-  (->> dispatch
-       (mapcat (fn [[pretty* syms]]
-                 (let [syms (->> (remove special-symbol? syms)
-                                 (map #(symbol "clojure.core" (name %)))
-                                 (concat syms))]
-                   (for [sym syms] [sym pretty*]))))
-       (into {})))
+  (into {} (for [[pretty-fn syms] dispatch
+                 sym syms
+                 sym (cons sym (when-not (special-symbol? sym)
+                                 [(symbol "clojure.core" (name sym))]))]
+             [sym pretty-fn])))
 
 (def default-code-table
   (build-code-table
@@ -192,8 +190,12 @@
 
   clojure.lang.IPersistentMap
   (-pretty [m ctx]
-    (let [kvps (for [[k v] m] [:span (-pretty k ctx) " " (pretty v ctx)])]
-      [:group "{" [:align (interpose [:span "," :line] kvps)] "}"]))
+    (let [kvps (for [[k v] m]
+                 [:span (-pretty k ctx) " " (pretty v ctx)])
+          doc [:group "{" [:align (interpose [:span "," :line] kvps)]  "}"]]
+      (if (record? m)
+        [:span "#" (-> m class .getName) doc]
+        doc)))
 
   clojure.lang.IPersistentSet
   (-pretty [s ctx]
