@@ -4,6 +4,7 @@
   (:require [clojure.walk :as walk]
             [fipp.printer :refer (pprint-document)]))
 
+
 (defprotocol IPretty
   (-pretty [x ctx]))
 
@@ -11,6 +12,7 @@
   (if-let [m (and (:print-meta ctx) (meta x))]
     [:align [:span "^" (-pretty m ctx)] :line (-pretty x ctx)]
     (-pretty x ctx)))
+
 
 ;;; Helper functions
 
@@ -22,6 +24,7 @@
 
 (defn maybe-a [pred xs]
   (let [x (first xs)] (if (pred x) [x (rest xs)] [nil xs])))
+
 
 ;;; Format case, cond, condp
 
@@ -51,6 +54,7 @@
       (block (concat (map #(pretty-cond-clause % ctx) clauses)
                      (when default [(pretty default ctx)]))))))
 
+
 ;;; Format arrows, def, if, and similar
 
 (defn pretty-arrow [[head & stmts] ctx]
@@ -63,6 +67,7 @@
   (list-group
     (-pretty head ctx) " " (pretty test ctx) :line
     (block (map #(pretty % ctx) more))))
+
 
 ;;; Format defn, fn, and similar
 
@@ -109,6 +114,7 @@
       [:group "#(" [:align 2 (interpose :line (map #(pretty % ctx) body*))] ")"])
     (pretty-fn form ctx)))
 
+
 ;;; Format ns
 
 (defn pretty-libspec [[head & clauses] ctx]
@@ -124,6 +130,7 @@
       (block (concat (when docstring [(-pretty docstring ctx)])
                      (when attr-map  [(-pretty attr-map ctx)])
                      (map #(pretty-libspec % ctx) specs))))))
+
 
 ;;; Format deref, quote, unquote, var
 
@@ -143,6 +150,23 @@
   (list-group
     (-pretty head ctx) " " (pretty-bindings bvec ctx) :line
     (block (map #(pretty % ctx) body))))
+
+
+;;; Types and interfaces
+
+(defn pretty-impls [opts+specs ctx]
+  ;;TODO parse out opts
+  ;;TODO parse specs and call pretty on methods
+  (block (map #(-pretty % ctx) opts+specs)))
+
+(defn pretty-type [[head fields & opts+specs] ctx]
+  (list-group (-pretty head ctx) " " (pretty fields ctx) :line
+              (pretty-specs opts+specs ctx)))
+
+(defn pretty-reify [[head & opts+specs] ctx]
+  (list-group (-pretty head ctx) :line
+              (pretty-specs opts+specs ctx)))
+
 
 ;;; Symbol table
 
@@ -166,7 +190,12 @@
      pretty-ns    '[ns]
      pretty-let   '[binding doseq dotimes for if-let if-some let let* loop loop*
                     when-first when-let when-some with-local-vars with-open with-redefs]
-     pretty-quote '[deref quote unquote var]}))
+     pretty-quote '[deref quote unquote var]
+     pretty-type  '[deftype defrecord]
+     pretty-reify '[reify]}))
+
+
+;;; Data structures
 
 (extend-protocol IPretty
 
@@ -204,6 +233,7 @@
   ;TODO clojure.pprint supports clojure.lang.{IDeref,PersistentQueue} – do we want these?
 
   )
+
 
 (defn pprint
   ([x] (pprint x {}))
