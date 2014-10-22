@@ -60,7 +60,8 @@ The offset is optional:
 
 Write a `pretty` function and use `print-document`.
 
-TODO: More docs here!  Until then, see `src/fipp/edn.clj`.
+TODO: More docs here!  Until then, see `src/fipp/edn.clj` and
+`src/fipp/clojure.clj`.
 
 ## Custom Document Nodes
 

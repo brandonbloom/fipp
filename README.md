@@ -4,14 +4,33 @@ Fipp is a better pretty printer for Clojure.
 
 Like clojure.pprint, this pretty printer has a *linear runtime* and uses
 *bounded space*. However, unlike clojure.pprint, Fipp's implementation is
-functionally pure and its interface is powered by data, not method calls.
+tuned for great performance, functionally pure, and has a data-driven API.
 
-The data interface is agnostic to the source language. An EDN printer is
-included with Fipp, but it is easy to create a pretty printer for your
-own language or documents.
+The data interface is agnostic to the source language. Printer are included
+for Edn data and Clojure code, but it is easy to create a pretty printer for
+your own language or documents: Even if they're not made out of Clojure data!
 
 
-## Usage
+## Installation
+
+Fipp artifacts are [published on Clojars](https://clojars.org/fipp).
+
+To depend on this version with Lein, add the following to your `project.clj`:
+
+```clojure
+[fipp "0.5.0"]
+```
+
+
+### Colorization & REPL Integration
+
+[Puget][2] uses Fipp's engine to provide an alternative, colorizing printer.
+
+[Whidbey][3] integrates Puget in to nREPL via Leinigen, so that every
+evaluation pretty prints in color.
+
+
+## Printer Usage
 
 ```clojure
 ;; Refer with a rename to avoid collision with your REPL's pprint.
@@ -21,12 +40,20 @@ own language or documents.
 (fipp (range 50))
 (fipp (range 20))
 (fipp (range 20) {:width 10})
+
+(require '[fipp.clojure])
+(fipp.clojure/pprint '(let [foo "abc 123"
+                            bar {:x 1 :y 2 :z 3}]
+                        (do-stuff foo (assoc bar :w 4)))
+                    {:width 40})
 ```
 
 The available options are:
 
 - `:width` defaults to `70`.
 - `:print-meta` defaults to `clojure.core/*print-meta*`.
+
+Any other supported/hidden options are subject to change.
 
 
 ## Fast!
@@ -79,41 +106,6 @@ Here are some examples:
 
 There is a small set of primitive document elements, but the set of keywords
 is extensible via expansion.  See `doc/extensibility.md` for details.
-
-
-## Installation
-
-Fipp artifacts are [published on Clojars](https://clojars.org/fipp).
-
-To depend on this version with Lein, add the following to your `project.clj`:
-
-```clojure
-[fipp "0.4.3"]
-```
-
-Please note that Fipp requires Clojure 1.5.1 for access to the latest Reducers bits.
-
-### Colorization & REPL Integration
-
-[Puget][2] uses Fipp's engine to provide an alternative, colorizing printer.
-
-[Whidbey][3] integrates Puget in to nREPL via Leinigen, so that every
-evaluation pretty prints in color.
-
-## TODO
-
-#### No Brainers
-
-- Clojure code-dispatch (right now we're only EDN)
-- Limit print depth
-- Limit lines printed
-- Limit list lengths
-- Cycle detection
-
-#### Crazy Ideas
-
-- Macro to compile fast, non-pretty printers for toString impls.
-- Document stylesheets (think CSS/XSLT/DSSSL) for customizing printing
 
 
 ## License

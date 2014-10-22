@@ -238,7 +238,7 @@
 (defn pprint
   ([x] (pprint x {}))
   ([x options]
-   (let [symbols (merge default-symbols (:symbols options))
+   (let [symbols (:symbols options default-symbols)
          ctx (merge {:symbols symbols :print-meta *print-meta*}
                     (dissoc options :symbols))]
      (binding [*print-meta* false]
