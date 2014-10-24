@@ -161,11 +161,11 @@
 
 (defn pretty-type [[head fields & opts+specs] ctx]
   (list-group (-pretty head ctx) " " (pretty fields ctx) :line
-              (pretty-specs opts+specs ctx)))
+              (pretty-impls opts+specs ctx)))
 
 (defn pretty-reify [[head & opts+specs] ctx]
   (list-group (-pretty head ctx) :line
-              (pretty-specs opts+specs ctx)))
+              (pretty-impls opts+specs ctx)))
 
 
 ;;; Symbol table

@@ -18,7 +18,7 @@ Fipp artifacts are [published on Clojars](https://clojars.org/fipp).
 To depend on this version with Lein, add the following to your `project.clj`:
 
 ```clojure
-[fipp "0.5.0"]
+[fipp "0.5.1"]
 ```
 
 
