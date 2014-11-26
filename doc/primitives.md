@@ -1,7 +1,7 @@
 # Pretty Document Primitives
 
 Fipp's pretty printer engine accepts a "pretty document" which is a tree of
-these primitive nodes. Each node is a vector tagged with a keyword in as its
+these primitive nodes. Each node is a vector tagged with a keyword as its
 first-element. Common patterns have shorthand representations.  The behavior
 of and shorthands for each primitive are described below.
 
