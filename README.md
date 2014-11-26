@@ -60,8 +60,8 @@ Any other supported/hidden options are subject to change.
 
 In my non-scientific testing, it has proven to be at least five times as fast
 as `clojure.pprint`.  It also has the nice property of printing no later than
-having consumed the bound amount of memory, so you see your first few lines of
-output instantaneously.
+having consumed the bounded amount of memory, so you see your first few lines
+of output instantaneously.
 
 The core algorithm is described by Swierstra and Chitil in
 [Linear, Bounded, Functional Pretty-Printing](http://kar.kent.ac.uk/24041/1/LinearOlaf.pdf).
