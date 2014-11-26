@@ -104,8 +104,8 @@ Here are some examples:
 (ppd [:group "(do" [:nest 2 :line "(step-1)" :line "(step-2)"] ")"])
 ```
 
-There is a small set of primitive document elements, but the set of keywords
-is extensible via expansion.  See `doc/extensibility.md` for details.
+If you want to write your own printer, see
+[doc/primitives.md](doc/primitives.md) for details.
 
 
 ## License
