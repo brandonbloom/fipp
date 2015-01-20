@@ -23,7 +23,7 @@ You should not include `\n` characters in text.
 
 ## [:pass "..."]
 
-Passthrough nodes are *not* measured and printed verbaitm.
+Passthrough nodes are printed verbaitm, but *not* measured.
 
 Use Passthrough nodes for zero-width control sequences, such as ANSI escape
 sequences for colors.
