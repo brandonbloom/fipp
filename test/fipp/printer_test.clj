@@ -131,3 +131,14 @@
     (is (= (ppstr doc1 3) "A\nB C\n"))
     (is (= (ppstr doc1 2) "A\nB\nC\n"))
     (is (= (ppstr doc1 1) "A\nB\nC\n"))))
+
+(deftest escaped-test
+  (testing "escaped nodes output verbatim, have width 1"
+    (is (= (ppstr [:group (repeat 5 [:span "a" :line])] 9)
+           (str (apply str (repeat 5 "a\n")) "\n")))
+    (is (= (ppstr [:group (repeat 5 [:span "a" :line])] 10)
+           (str (apply str (repeat 5 "a ")) "\n")))
+    (is (= (ppstr [:group (repeat 5 [:span [:escaped "&#97;"] :line])] 9)
+           (str (apply str (repeat 5 "&#97;\n")) "\n")))
+    (is (= (ppstr [:group (repeat 5 [:span [:escaped "&#97;"] :line])] 10)
+           (str (apply str (repeat 5 "&#97; ")) "\n")))))

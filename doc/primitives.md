@@ -21,6 +21,14 @@ automatically expanded to `[:text "..."]`.
 You should not include `\n` characters in text.
 
 
+## [:escaped "..."]
+
+Escaped nodes are printed verbatim, but measure as one character.
+
+Useful for cases where characters need to be escaped in the printed
+output, but will eventually be rendered to occupy only one column.
+
+
 ## [:pass "..."]
 
 Passthrough nodes are printed verbaitm, but *not* measured.
