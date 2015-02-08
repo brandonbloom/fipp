@@ -10,6 +10,9 @@ The data interface is agnostic to the source language. Printers are included
 for Edn data and Clojure code, but it is easy to create a pretty printer for
 your own language or documents: Even if they're not made out of Clojure data!
 
+Fipp is great for printing large data files and debugging macros, but it is
+not suitable as a code reformatting tool. ([explaination][4])
+
 
 ## Installation
 
@@ -64,7 +67,7 @@ having consumed the bounded amount of memory, so you see your first few lines
 of output instantaneously.
 
 The core algorithm is described by Swierstra and Chitil in
-[Linear, Bounded, Functional Pretty-Printing](http://kar.kent.ac.uk/24041/1/LinearOlaf.pdf).
+[Linear, Bounded, Functional Pretty-Printing][5].
 
 Swierstra and Chitil's implementation uses lazy evaluation and requires
 [tying the knot](http://www.haskell.org/haskellwiki/Tying_the_Knot) to
@@ -72,7 +75,7 @@ interleave the measuring and printing phases to achieve the bounded space goal.
 
 However, this implementation is instead a port of the strict evaluation
 strategy as described by Kiselyov, Peyton-Jones, and Sabry in
-[Lazy v. Yield: Incremental, Linear Pretty-printing](http://www.cs.indiana.edu/~sabry/papers/yield-pp.pdf).
+[Lazy v. Yield: Incremental, Linear Pretty-printing][6].
 
 Clojure's Reducers framework is used to simulate generators and their `yield`
 operator. Unlike lazy reduction, reducers interleave execution of multi-phase
@@ -89,7 +92,7 @@ is side-effectual. For example, to print a breaking newline, you execute
 process to write or compose new pretty printers.
 
 Fipp, on the other hand, accepts a "pretty print document" as input. This
-document is similar to HTML markup using [hiccup](https://github.com/weavejester/hiccup).
+document is similar to HTML markup using [hiccup][7].
 
 Here are some examples:
 
@@ -123,3 +126,7 @@ Fipp is fast in part thanks to [YourKit's Java Profiler][1].
 [1]: http://www.yourkit.com/java/profiler/index.jsp
 [2]: https://github.com/greglook/puget
 [3]: https://github.com/greglook/whidbey
+[4]: https://github.com/brandonbloom/fipp/issues/21#issuecomment-64693415
+[5]: http://kar.kent.ac.uk/24041/1/LinearOlaf.pdf
+[6]: http://www.cs.indiana.edu/~sabry/papers/yield-pp.pdf
+[7]: https://github.com/weavejester/hiccup
