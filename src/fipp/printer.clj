@@ -40,6 +40,10 @@
 (defmethod serialize-node :pass [[_ & text]]
   [{:op :pass, :text (apply str text)}])
 
+(defmethod serialize-node :escaped [[_ text]]
+  (assert (string? text))
+  [{:op :escaped, :text text}])
+
 (defmethod serialize-node :span [[_ & children]]
   (serialize children))
 
@@ -82,6 +86,9 @@
       (case (:op node)
         :text
           (let [position* (+ position (count (:text node)))]
+            [position* (assoc node :right position*)])
+        :escaped
+          (let [position* (inc position)]
             [position* (assoc node :right position*)])
         :line
           (let [position* (+ position (count (:inline node)))]
@@ -166,6 +173,14 @@
                       state* (assoc state :column (+ indent (count text)))]
                   [state* emit])
                 (let [state* (update-in state [:column] + (count text))]
+                  [state* [text]])))
+          :escaped
+            (let [text (:text node)]
+              (if (zero? column)
+                (let [emit [(apply str (repeat indent \space)) text]
+                      state* (assoc state :column (inc indent))]
+                  [state* emit])
+                (let [state* (update-in state [:column] inc)]
                   [state* [text]])))
           :pass
             [state [(:text node)]]
