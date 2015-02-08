@@ -33,6 +33,7 @@
                    (str "Unexpected class for doc node: " (class doc))))))
 
 ;; Primitives
+;; See doc/primitives.md for details.
 
 (defmethod serialize-node :text [[_ & text]]
   [{:op :text, :text (apply str text)}])
