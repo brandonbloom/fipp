@@ -11,7 +11,7 @@ for Edn data and Clojure code, but it is easy to create a pretty printer for
 your own language or documents: Even if they're not made out of Clojure data!
 
 Fipp is great for printing large data files and debugging macros, but it is
-not suitable as a code reformatting tool. ([explaination][4])
+not suitable as a code reformatting tool. ([explanation][4])
 
 
 ## Installation
