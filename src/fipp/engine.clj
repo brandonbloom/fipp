@@ -1,4 +1,4 @@
-(ns fipp.printer ;TODO rename to fipp.engine
+(ns fipp.engine
   "See: Oleg Kiselyov, Simon Peyton-Jones, and Amr Sabry
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
@@ -98,7 +98,7 @@
   (conjr (pop deque) (apply f (peek deque) args)))
 
 (defn annotate-begins
-  "Given printer options, returns a transducer which annotate the right-side
+  "Given printing options, returns a transducer which annotate the right-side
   of groups on their :begin nodes.  This includes the pruning algorithm which
   will annotate some :begin nodes as being :too-far to the right without
   calculating their exact sizes."
@@ -167,7 +167,7 @@
 
 
 (defn format-nodes
-  "Given printer options, returns a transducer which produces the fully
+  "Given printing options, returns a transducer which produces the fully
   laid-out strings."
   [{:keys [width] :as options}]
   (fn [rf]

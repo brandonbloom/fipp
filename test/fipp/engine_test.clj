@@ -1,6 +1,6 @@
-(ns fipp.printer_test
+(ns fipp.engine-test
   (:use [clojure.test])
-  (:require [fipp.printer :as p]))
+  (:require [fipp.engine :as e]))
 
 ;; Tests for doc1 converted from the Haskell in the literature.
 ;; Group (Text "A" :+: (Line :+: Group (Text "B" :+: (Line :+: Text "C"))))
@@ -8,7 +8,7 @@
 
 (deftest serialize-test
   (testing "Simple"
-    (is (= (p/serialize doc1)
+    (is (= (e/serialize doc1)
            [{:op :begin}
             {:op :text :text "A"}
             {:op :line :inline " "}
@@ -23,7 +23,7 @@
 
 (deftest annotate-rights-test
   (testing "A.2  Computing the horizontal position"
-    (is (= (->> doc1 p/serialize (into [] p/annotate-rights))
+    (is (= (->> doc1 e/serialize (into [] e/annotate-rights))
            [; Generated: GBeg 0
             {:op :begin :right 0}
             ; Generated: TE 1 "A"
@@ -46,8 +46,8 @@
 (deftest annotate-begins-test
 
   (testing "A.3 Determining group widths"
-    (is (= (->> (p/serialize doc1)
-                (eduction p/annotate-rights (p/annotate-begins {:width 70}))
+    (is (= (->> (e/serialize doc1)
+                (eduction e/annotate-rights (e/annotate-begins {:width 70}))
                 vec)
         [; Generated: GBeg 5
          {:op :begin :right 5}
@@ -75,10 +75,10 @@
                        (swap! acc conj [prefix x])
                        x)))
           options {:width 3}]
-      (->> (p/serialize doc1)
-           (eduction p/annotate-rights
+      (->> (e/serialize doc1)
+           (eduction e/annotate-rights
                      (log :in)
-                     (p/annotate-begins options)
+                     (e/annotate-begins options)
                      (log :out))
            (run! identity)) ; discard output
       (is (= @acc
@@ -121,10 +121,10 @@
 
 (defn ppstr [doc width]
   (with-out-str
-    (p/pprint-document doc {:width width})))
+    (e/pprint-document doc {:width width})))
 
 (deftest formatted-test
-  (testing "p/pprint-document"
+  (testing "e/pprint-document"
     (is (= (ppstr doc1 6) "A B C\n"))
     (is (= (ppstr doc1 5) "A B C\n"))
     (is (= (ppstr doc1 4) "A\nB C\n"))

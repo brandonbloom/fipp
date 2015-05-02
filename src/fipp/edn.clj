@@ -1,7 +1,7 @@
 (ns fipp.edn
   "Provides a pretty document serializer and pprint fn for Clojure/EDN forms.
   See fipp.clojure for pretty printing Clojure code."
-  (:require [fipp.printer :as printer :refer (pprint-document)]))
+  (:require [fipp.engine :refer (pprint-document)]))
 
 (defprotocol IEdn
   "Perform a shallow conversion to an Edn data structure."

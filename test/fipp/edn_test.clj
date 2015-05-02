@@ -1,4 +1,4 @@
-(ns fipp.printer_test
+(ns fipp.edn-test
   (:use [clojure.test])
   (:require [clojure.string :as str]
             [fipp.edn :refer [pprint]]))
@@ -7,7 +7,10 @@
 
 
 (defn clean [s]
-  (-> s str/trim (str/replace #"\"0x[a-f0-9]+\"" "\"0xDEADBEEF\"")))
+  (-> s
+    str/trim
+    (str/replace #"\"0x[a-f0-9]+\"" "\"0xDEADBEEF\"")
+    (str/replace #"reify__[0-9]+" "reify__123")))
 
 (def data [
 
@@ -37,7 +40,7 @@
  {:foo 1, :bar \\c, :baz \"str\"}
  {:small-value [1 2 3],
   :larger-value {:some-key \"foo\", :some-other-key \"bar\"}}
- #fipp.printer_test.Person{:first-name \"Brandon\", :last-name \"Bloom\"}
+ #fipp.edn_test.Person{:first-name \"Brandon\", :last-name \"Bloom\"}
  #x 5
  #object[clojure.lang.Atom
          \"0xc4ca69f\"
@@ -64,8 +67,8 @@
  {:small-value [1 2 3],
   :larger-value {:some-key \"foo\",
                  :some-other-key \"bar\"}}
- #fipp.printer_test.Person{:first-name \"Brandon\",
-                           :last-name \"Bloom\"}
+ #fipp.edn_test.Person{:first-name \"Brandon\",
+                       :last-name \"Bloom\"}
  #x 5
  #object[clojure.lang.Atom
          \"0x44b300a7\"

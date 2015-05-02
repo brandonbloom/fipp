@@ -5,7 +5,7 @@ these primitive nodes. Each node is a vector tagged with a keyword as its
 first-element. Common patterns have shorthand representations.  The behavior
 of and shorthands for each primitive are described below.
 
-See the `serialize` function in `src/fipp/printer.clj` for the full details of
+See the `serialize` function in `src/fipp/engine.clj` for the full details of
 how input documents are expanded and interpretered.
 
 See `src/fipp/edn.clj` for example usage.

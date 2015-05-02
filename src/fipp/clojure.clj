@@ -2,7 +2,7 @@
   "Provides a pretty document serializer and pprint fn for Clojure code.
   See fipp.edn for pretty printing Clojure/EDN data structures"
   (:require [clojure.walk :as walk]
-            [fipp.printer :refer (pprint-document)]))
+            [fipp.engine :refer (pprint-document)]))
 
 ;;TODO leverage fipp.edn
 

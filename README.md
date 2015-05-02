@@ -103,7 +103,7 @@ document is similar to HTML markup using [hiccup][7].
 Here are some examples:
 
 ```clojure
-(require '[fipp.printer :refer (pprint-document)])
+(require '[fipp.engine :refer (pprint-document)])
 
 (defn ppd [doc]
   (pprint-document doc {:width 10}))
