@@ -146,27 +146,28 @@
                                                  :nodes empty-deque})
                                  (update-right buffers update-in [:nodes]
                                                conjr node))
-                      emit nil]
+                      res res]
                  (if (and (<= right position*) (<= (count buffers*) width))
                    ;; Not too far
                    (do
                      (vreset! pos position*)
                      (vreset! bufs buffers*)
-                     (reduce rf res emit))
+                     res)
                    ;; Too far
                    (let [buffer (first buffers*)
                          buffers** (next buffers*)
                          begin {:op :begin, :right :too-far}
-                         emit* (concat emit [begin] (:nodes buffer))]
+                         res* (rf res begin)
+                         res* (reduce rf res* (:nodes buffer))]
                      (if (empty? buffers**)
                        ;; Root buffered group
                        (do
                          (vreset! pos 0)
                          (vreset! bufs empty-deque)
-                         (reduce rf res emit*))
+                         res*)
                        ;; Interior group
                        (let [position** (:position (first buffers**))]
-                         (recur position** buffers** emit*)))))))
+                         (recur position** buffers** res*)))))))
           )))))))
 
 
