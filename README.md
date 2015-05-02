@@ -82,10 +82,11 @@ However, this implementation is instead a port of the strict evaluation
 strategy as described by Kiselyov, Peyton-Jones, and Sabry in
 [Lazy v. Yield: Incremental, Linear Pretty-printing][6].
 
-Clojure's Reducers framework is used to simulate generators and their `yield`
-operator. Unlike lazy reduction, reducers interleave execution of multi-phase
-reductions by composition of reducer functions. This enables preservation of
-the bounded-space requirement and eases reasoning about the program's behavior.
+Clojure's transducers are used to simulate generators and their `yield`
+operator. Unlike lazy reduction, transducers interleave execution of
+multi-phase transformations by function composition. This enables preservation
+of the bounded-space requirement and eases reasoning about the program's
+behavior. Additionally, it avoids a lot of intermediate object allocation.
 
 
 ## Idiomatic!

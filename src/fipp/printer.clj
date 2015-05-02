@@ -2,9 +2,8 @@
   "See: Oleg Kiselyov, Simon Peyton-Jones, and Amr Sabry
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
-            [clojure.core.reducers :as r]
-            [clojure.data.finger-tree :as ftree :refer (double-list ft-concat)]
-            [transduce.reducers :as t]))
+            [clojure.data.finger-tree :as ftree
+             :refer (double-list ft-concat)]))
 
 
 ;;; Some double-list (deque / 2-3 finger-tree) utils
@@ -81,21 +80,19 @@
 (defn throw-op [node]
   (throw (Exception. (str "Unexpected op on node: " node))))
 
-(def annotate-rights
-  (t/map-state
-    (fn [position node]
-      (case (:op node)
-        :text
-          (let [position* (+ position (count (:text node)))]
-            [position* (assoc node :right position*)])
-        :escaped
-          (let [position* (inc position)]
-            [position* (assoc node :right position*)])
-        :line
-          (let [position* (+ position (count (:inline node)))]
-            [position* (assoc node :right position*)])
-        [position (assoc node :right position)]))
-    0))
+(defn annotate-rights [rf]
+  (let [pos (volatile! 0)]
+    (fn
+      ([] (rf))
+      ([res] (rf res))
+      ([res node]
+       (let [delta (case (:op node)
+                     :text (count (:text node))
+                     :line (count (:inline node))
+                     :escaped 1
+                     0)
+             p (vswap! pos + delta)]
+         (rf res (assoc node :right p)))))))
 
 
 ;;; Annotate right-side of groups on their :begin nodes.  This includes the
@@ -107,19 +104,29 @@
 (defn update-right [deque f & args]
   (conjr (pop deque) (apply f (peek deque) args)))
 
-(def annotate-begins
-  (t/mapcat-state
-    (fn [{:keys [position buffers] :as state}
-         {:keys [op right] :as node}]
+(defn annotate-begins [rf]
+  (let [pos (volatile! 0)
+        bufs (volatile! empty-deque)]
+    (fn
+      ([] (rf))
+      ([res] (rf res))
+      ([res {:keys [op right] :as node}]
+
+
+       (let [position @pos
+             buffers @bufs]
+
+
       (if (empty? buffers)
         (if (= op :begin)
           ;; Buffer groups
           (let [position* (+ right (:width *options*))
-                buffer {:position position* :nodes empty-deque}
-                state* {:position position* :buffers (double-list buffer)}]
-            [state* nil])
+                buffer {:position position* :nodes empty-deque}]
+            (vreset! pos position*)
+            (vreset! bufs (double-list buffer))
+            res)
           ;; Emit unbuffered
-          [state [node]])
+          (rf res node))
         (if (= op :end)
           ;; Pop buffer
           (let [buffer (peek buffers)
@@ -127,10 +134,14 @@
                 begin {:op :begin :right right}
                 nodes (conjlr begin (:nodes buffer) node)]
             (if (empty? buffers*)
-              [{:position 0 :buffers empty-deque} nodes]
-              (let [buffers** (update-right buffers* update-in [:nodes]
-                                            ft-concat nodes)]
-                [(assoc state :buffers buffers**) nil])))
+              (do
+                (vreset! pos 0)
+                (vreset! bufs empty-deque)
+                (reduce rf res nodes))
+              (do
+                (vreset! bufs (update-right buffers* update-in [:nodes]
+                                            ft-concat nodes))
+                res)))
           ;; Pruning lookahead
           (let [width (:width *options*)]
             (loop [position* position
@@ -142,7 +153,10 @@
                    emit nil]
               (if (and (<= right position*) (<= (count buffers*) width))
                 ;; Not too far
-                [{:position position* :buffers buffers*} emit]
+                (do
+                  (vreset! pos position*)
+                  (vreset! bufs buffers*)
+                  (reduce rf res emit))
                 ;; Too far
                 (let [buffer (first buffers*)
                       buffers** (next buffers*)
@@ -150,84 +164,101 @@
                       emit* (concat emit [begin] (:nodes buffer))]
                   (if (empty? buffers**)
                     ;; Root buffered group
-                    [{:position 0 :buffers empty-deque} emit*]
+                    (do
+                      (vreset! pos 0)
+                      (vreset! bufs empty-deque)
+                      (reduce rf res emit*))
                     ;; Interior group
                     (let [position** (:position (first buffers**))]
                       (recur position** buffers** emit*)))))))
-          )))
-    {:position 0 :buffers empty-deque}))
+          ))
+
+      )
+
+
+
+
+         ))))
 
 
 ;;; Format the annotated document stream.
 
-(defn format-nodes [coll]
-  (t/mapcat-state
-    (fn [{:keys [fits length tab-stops column] :as state}
-         {:keys [op right] :as node}]
-      (let [indent (peek tab-stops)
+(defn format-nodes [rf]
+  (let [fits (volatile! 0)
+        length (volatile! (:width *options*))
+        tab-stops (volatile! '(0)) ; Technically, this is an unbounded stack...
+        column (volatile! 0)]
+    (fn
+      ([] (rf))
+      ([res] (rf res))
+      ([res {:keys [op right] :as node}]
+
+
+      (let [indent (peek @tab-stops)
             width (:width *options*)]
         (case op
           :text
-            (let [text (:text node)]
-              (if (zero? column)
-                (let [emit [(apply str (repeat indent \space)) text]
-                      state* (assoc state :column (+ indent (count text)))]
-                  [state* emit])
-                (let [state* (update-in state [:column] + (count text))]
-                  [state* [text]])))
+            (let [text (:text node)
+                  res* (if (zero? @column)
+                         (do (vswap! column + indent)
+                             (rf res (apply str (repeat indent \space))))
+                         res)]
+              (vswap! column + (count text))
+              (rf res* text))
           :escaped
-            (let [text (:text node)]
-              (if (zero? column)
-                (let [emit [(apply str (repeat indent \space)) text]
-                      state* (assoc state :column (inc indent))]
-                  [state* emit])
-                (let [state* (update-in state [:column] inc)]
-                  [state* [text]])))
+            (let [text (:text node)
+                  res* (if (zero? @column)
+                         (do (vswap! column + indent)
+                             (rf res (apply str (repeat indent \space))))
+                         res)]
+              (vswap! column inc)
+              (rf res* text))
           :pass
-            [state [(:text node)]]
+            (rf res (:text node))
           :line
-            (if (zero? fits)
-              (let [state* (assoc state :length (- (+ right width) indent)
-                                        :column 0)]
-                [state* ["\n"]])
-              (let [inline (:inline node)
-                    state* (update-in state [:column] + (count inline))]
-                [state* [inline]]))
+            (if (zero? @fits)
+              (do
+                (vreset! length (- (+ right width) indent))
+                (vreset! column 0)
+                (rf res "\n"))
+              (let [inline (:inline node)]
+                (vswap! column + (count inline))
+                (rf res inline)))
           :break
-            (let [state* (assoc state :length (- (+ right width) indent)
-                                      :column 0)]
-              [state* ["\n"]])
+            (do
+              (vreset! length (- (+ right width) indent))
+              (vreset! column 0)
+              (rf res "\n"))
           :nest
-            [(update-in state [:tab-stops] conj (+ indent (:offset node))) nil]
+            (do (vswap! tab-stops conj (+ indent (:offset node)))
+                res)
           :align
-            [(update-in state [:tab-stops] conj (+ column (:offset node))) nil]
+            (do (vswap! tab-stops conj (+ @column (:offset node)))
+                res)
           :outdent
-            [(update-in state [:tab-stops] pop) nil]
+            (do (vswap! tab-stops pop)
+                res)
           :begin
-            (let [fits* (cond
-                          (pos? fits) (inc fits)
-                          (= right :too-far) 0
-                          (<= right length) 1
-                          :else 0)]
-              [(assoc state :fits fits*) nil])
+            (do (vreset! fits (cond
+                                (pos? @fits) (inc @fits)
+                                (= right :too-far) 0
+                                (<= right @length) 1
+                                :else 0))
+                res)
           :end
-            (let [fits* (max 0 (dec fits))]
-              [(assoc state :fits fits*) nil])
+            (do (vreset! fits (max 0 (dec @fits)))
+                res)
           (throw-op node))))
-    {:fits 0
-     :length (:width *options*)
-     :tab-stops '(0) ; Technically, this stack uses unbounded space...
-     :column 0}
-  coll))
+
+
+       )))
+
 
 
 (defn pprint-document [document options]
   (binding [*options* (merge *options* options)]
-    (->> document
-         serialize
-         annotate-rights
-         annotate-begins
-         format-nodes
+    (->> (serialize document)
+         (eduction annotate-rights annotate-begins format-nodes)
          (run! print)))
   (println))
 
@@ -261,13 +292,13 @@
   (binding [*options* {:width 3}]
     (->> doc3
          serialize
-         ;(map-dbg "node: ")
-         annotate-rights
-         annotate-begins
-         format-nodes
-         ;clojure.pprint/pprint
-         (run! print)
-         ;(into [])
+         (into [] (comp
+                    annotate-rights
+                    annotate-begins
+                    format-nodes
+                    ))
+         ;(run! print)
+         clojure.pprint/pprint
          )
     ;nil
     )

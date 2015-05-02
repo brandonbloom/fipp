@@ -1,7 +1,6 @@
 (ns fipp.printer_test
   (:use [clojure.test])
-  (:require [clojure.core.reducers :as r]
-            [fipp.printer :as p]))
+  (:require [fipp.printer :as p]))
 
 ;; Tests for doc1 converted from the Haskell in the literature.
 ;; Group (Text "A" :+: (Line :+: Group (Text "B" :+: (Line :+: Text "C"))))
@@ -24,7 +23,7 @@
 
 (deftest annotate-rights-test
   (testing "A.2  Computing the horizontal position"
-    (is (= (->> doc1 p/serialize p/annotate-rights (into []))
+    (is (= (->> doc1 p/serialize (into [] p/annotate-rights))
            [; Generated: GBeg 0
             {:op :begin :right 0}
             ; Generated: TE 1 "A"
@@ -47,7 +46,9 @@
 (deftest annotate-begins-test
 
   (testing "A.3 Determining group widths"
-    (is (= (->> doc1 p/serialize p/annotate-rights p/annotate-begins (into []))
+    (is (= (->> (p/serialize doc1)
+                (eduction p/annotate-rights p/annotate-begins)
+                vec)
         [; Generated: GBeg 5
          {:op :begin :right 5}
          ; Generated: TE 1 "A"
@@ -69,18 +70,18 @@
 
   (testing "A.4 Pruning"
     (let [acc (atom [])
-          log (fn [prefix coll]
-                (r/map (fn [x]
-                         (swap! acc conj [prefix x])
-                         x)
-                       coll))
-           pipeline (->> doc1 p/serialize p/annotate-rights
-                         (log :in)
-                         p/annotate-begins
-                         (log :out))]
+          log (fn [prefix]
+                (map (fn [x]
+                       (swap! acc conj [prefix x])
+                       x)))
+           pipeline (->> (p/serialize doc1)
+                         (eduction p/annotate-rights
+                                   (log :in)
+                                   p/annotate-begins
+                                   (log :out)))]
       (is (= (do ;; page width 3
                (binding [p/*options* {:width 3}]
-                 (into [] pipeline))
+                 (vec pipeline))
                @acc)
              [; trHPP: read: GBeg 0
               [:in {:op :begin :right 0}]
