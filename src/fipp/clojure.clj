@@ -4,6 +4,8 @@
   (:require [clojure.walk :as walk]
             [fipp.printer :refer (pprint-document)]))
 
+;;TODO leverage fipp.edn
+
 
 (defprotocol IPretty
   (-pretty [x ctx]))

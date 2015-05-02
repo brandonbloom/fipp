@@ -1,4 +1,4 @@
-(ns fipp.printer
+(ns fipp.printer ;TODO rename to fipp.engine
   "See: Oleg Kiselyov, Simon Peyton-Jones, and Amr Sabry
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
