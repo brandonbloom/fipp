@@ -1,6 +1,6 @@
-(ns fipp.edn-test
+(ns fipp.visit-test
   (:use [clojure.test])
-  (:require [fipp.edn :refer [-edn]]))
+  (:require [fipp.visit :refer [-edn]]))
 
 (deftest to-edn-test
   (testing "Conversion to tagged literals"
