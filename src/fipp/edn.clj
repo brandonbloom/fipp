@@ -140,26 +140,3 @@
    (let [printer (map->EdnPrinter (merge {:print-meta *print-meta*} options))]
      (binding [*print-meta* false]
        (pprint-document (visit printer x) options)))))
-
-(comment
-
-  (defrecord Person [first-name last-name])
-
-  (def fut (future 1))
-
-  (binding [*print-meta* true]
-  (->
-    ;(list 1 2 3 4 [:a :b :c :d] 5 6 7 8 9)
-    ;{:foo 1 :bar \c :baz "str"}
-    ;{:small-value [1 2 3]
-    ; :larger-value ^{:some "meta" :and "such"}
-    ;               {:some-key "foo"
-    ;                :some-other-key "bar"}}
-    ;(Person. "Brandon" "Bloom")
-    ;(tagged-literal 'x 5)
-    ;(atom (range 20))
-    ;fut
-    ;#{:foo :bar :baz}
-    (pprint {:width 30})))
-
-)
