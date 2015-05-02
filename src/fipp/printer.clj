@@ -72,15 +72,13 @@
             [{:op :outdent}])))
 
 
-;;; Annotate right-side of nodes assuming hypothetical single-line
-;;; formatting of the document. Groups and indentation directives
-;;; are temporarily assumed to be zero-width. These values are
-;;; used by subsequent passes to produce the final layout.
 
-(defn throw-op [node]
-  (throw (Exception. (str "Unexpected op on node: " node))))
-
-(defn annotate-rights [rf]
+(defn annotate-rights
+  "A transducer which annotates the right-side of nodes assuming a
+  hypothetical single-line formatting of the document. Groups and indentation
+  directives are temporarily assumed to be zero-width. These values are used
+  by subsequent passes to produce the final layout."
+  [rf]
   (let [pos (volatile! 0)]
     (fn
       ([] (rf))
@@ -95,24 +93,24 @@
          (rf res (assoc node :right p)))))))
 
 
-;;; Annotate right-side of groups on their :begin nodes.  This includes the
-;;; pruning algorithm which will annotate some :begin nodes as being :too-far
-;;; to the right without calculating their exact sizes.
 
 (def ^:dynamic *options* {:width 70})
 
 (defn update-right [deque f & args]
   (conjr (pop deque) (apply f (peek deque) args)))
 
-(defn annotate-begins [rf]
+(defn annotate-begins
+  "A transducer which annotate the right-side of groups on their :begin nodes.
+  This includes the pruning algorithm which will annotate some :begin nodes as
+  being :too-far to the right without calculating their exact sizes."
+  [rf]
   (let [pos (volatile! 0)
         bufs (volatile! empty-deque)]
     (fn
       ([] (rf))
       ([res] (rf res))
       ([res {:keys [op right] :as node}]
-       (let [position @pos
-             buffers @bufs]
+       (let [buffers @bufs]
          (if (empty? buffers)
            (if (= op :begin)
              ;; Buffer groups
@@ -140,19 +138,16 @@
                    res)))
              ;; Pruning lookahead
              (let [width (:width *options*)]
-               (loop [position* position
-                      buffers* (if (= op :begin)
+               (loop [buffers* (if (= op :begin)
                                  (conjr buffers {:position (+ right width)
                                                  :nodes empty-deque})
                                  (update-right buffers update-in [:nodes]
                                                conjr node))
                       res res]
-                 (if (and (<= right position*) (<= (count buffers*) width))
+                 (if (and (<= right @pos) (<= (count buffers*) width))
                    ;; Not too far
-                   (do
-                     (vreset! pos position*)
-                     (vreset! bufs buffers*)
-                     res)
+                   (do (vreset! bufs buffers*)
+                       res)
                    ;; Too far
                    (let [buffer (first buffers*)
                          buffers** (next buffers*)
@@ -166,24 +161,25 @@
                          (vreset! bufs empty-deque)
                          res*)
                        ;; Interior group
-                       (let [position** (:position (first buffers**))]
-                         (recur position** buffers** res*)))))))
+                       (do
+                         (vreset! pos (:position (first buffers**)))
+                         (recur buffers** res*)))))))
           )))))))
 
 
-;;; Format the annotated document stream.
-
-(defn format-nodes [rf]
+(defn format-nodes
+  "A transducer which produces the fully laid-out strings."
+  [rf]
   (let [fits (volatile! 0)
         length (volatile! (:width *options*))
         tab-stops (volatile! '(0)) ; Technically, this is an unbounded stack...
-        column (volatile! 0)]
+        column (volatile! 0)
+        width (:width *options*)]
     (fn
       ([] (rf))
       ([res] (rf res))
       ([res {:keys [op right] :as node}]
-       (let [indent (peek @tab-stops)
-             width (:width *options*)]
+       (let [indent (peek @tab-stops)]
          (case op
            :text
              (let [text (:text node)
@@ -236,7 +232,7 @@
            :end
              (do (vreset! fits (max 0 (dec @fits)))
                  res)
-           (throw-op node)))
+           (throw (Exception. (str "Unexpected op on node: " node)))))
        ))))
 
 
