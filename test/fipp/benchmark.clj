@@ -32,28 +32,31 @@
 
 (comment
 
+
   (fipp.edn/pprint (random-map))
 
-  (bench-all 100 (vec (range 1000)))
-;
-;  #<core$prn clojure.core$prn@52305318>
-;  "Elapsed time: 119.552 msecs"
-;
-;  #<edn$pprint fipp.edn$pprint@2747ac17>
-;  "Elapsed time: 4306.488 msecs"
-;
-;  #<pprint$pprint clojure.pprint$pprint@5331429e>
-;  "Elapsed time: 37272.828 msecs"
 
-  (bench-all 1000 (random-map))
+  (bench-all 300 (vec (range 1000)))
+
+;  #object[clojure.core$prn 0x7ca1273f "clojure.core$prn@7ca1273f"]
+;  "Elapsed time: 124.948 msecs"
 ;
-;  #<core$prn clojure.core$prn@52305318>
-;  "Elapsed time: 113.016 msecs"
+;  #object[fipp.edn$pprint 0x25a8f408 "fipp.edn$pprint@25a8f408"]
+;  "Elapsed time: 2819.549 msecs"
 ;
-;  #<edn$pprint fipp.edn$pprint@2747ac17>
-;  "Elapsed time: 4788.604 msecs"
+;  #object[clojure.pprint$pprint 0x756f13ae "clojure.pprint$pprint@756f13ae"]
+;  "Elapsed time: 26679.661 msecs"
+
+
+  (bench-all 2000 (random-map))
+
+;  #object[clojure.core$prn 0x7ca1273f "clojure.core$prn@7ca1273f"]
+;  "Elapsed time: 49.925 msecs"
 ;
-;  #<pprint$pprint clojure.pprint$pprint@5331429e>
-;  "Elapsed time: 14043.387 msecs"
+;  #object[fipp.edn$pprint 0x25a8f408 "fipp.edn$pprint@25a8f408"]
+;  "Elapsed time: 1730.908 msecs"
+;
+;  #object[clojure.pprint$pprint 0x756f13ae "clojure.pprint$pprint@756f13ae"]
+;  "Elapsed time: 4655.917 msecs"
 
 )
