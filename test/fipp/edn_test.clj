@@ -108,7 +108,13 @@
     (is (= (clean (with-out-str (pprint data {:width 30}))) narrow)))
   (testing "Pretty printing metadata"
     (is (= (clean (with-out-str (pprint mdata {:width 70 :print-meta true})))
-           "#foo ^{:x 1} []"))))
+           "#foo ^{:x 1} []")))
+  (testing "Not quite Edn"
+    (is (= (with-out-str (pprint #'inc))
+           "#'clojure.core/inc\n")))
+    (is (= (with-out-str (pprint #"x\?y")
+           "#\"x\\?y\"")))
+  )
 
 (comment
 
