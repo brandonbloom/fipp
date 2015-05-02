@@ -47,7 +47,7 @@
 
   (testing "A.3 Determining group widths"
     (is (= (->> (p/serialize doc1)
-                (eduction p/annotate-rights p/annotate-begins)
+                (eduction p/annotate-rights (p/annotate-begins {:width 70}))
                 vec)
         [; Generated: GBeg 5
          {:op :begin :right 5}
@@ -74,15 +74,14 @@
                 (map (fn [x]
                        (swap! acc conj [prefix x])
                        x)))
-           pipeline (->> (p/serialize doc1)
-                         (eduction p/annotate-rights
-                                   (log :in)
-                                   p/annotate-begins
-                                   (log :out)))]
-      (is (= (do ;; page width 3
-               (binding [p/*options* {:width 3}]
-                 (vec pipeline))
-               @acc)
+          options {:width 3}]
+      (->> (p/serialize doc1)
+           (eduction p/annotate-rights
+                     (log :in)
+                     (p/annotate-begins options)
+                     (log :out))
+           (run! identity)) ; discard output
+      (is (= @acc
              [; trHPP: read: GBeg 0
               [:in {:op :begin :right 0}]
               ; trHPP: read: TE 1 "A"

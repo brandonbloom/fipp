@@ -94,50 +94,49 @@
 
 
 
-(def ^:dynamic *options* {:width 70})
-
 (defn update-right [deque f & args]
   (conjr (pop deque) (apply f (peek deque) args)))
 
 (defn annotate-begins
-  "A transducer which annotate the right-side of groups on their :begin nodes.
-  This includes the pruning algorithm which will annotate some :begin nodes as
-  being :too-far to the right without calculating their exact sizes."
-  [rf]
-  (let [pos (volatile! 0)
-        bufs (volatile! empty-deque)]
-    (fn
-      ([] (rf))
-      ([res] (rf res))
-      ([res {:keys [op right] :as node}]
-       (let [buffers @bufs]
-         (if (empty? buffers)
-           (if (= op :begin)
-             ;; Buffer groups
-             (let [position* (+ right (:width *options*))
-                   buffer {:position position* :nodes empty-deque}]
-               (vreset! pos position*)
-               (vreset! bufs (double-list buffer))
-               res)
-             ;; Emit unbuffered
-             (rf res node))
-           (if (= op :end)
-             ;; Pop buffer
-             (let [buffer (peek buffers)
-                   buffers* (pop buffers)
-                   begin {:op :begin :right right}
-                   nodes (conjlr begin (:nodes buffer) node)]
-               (if (empty? buffers*)
-                 (do
-                   (vreset! pos 0)
-                   (vreset! bufs empty-deque)
-                   (reduce rf res nodes))
-                 (do
-                   (vreset! bufs (update-right buffers* update-in [:nodes]
-                                               ft-concat nodes))
-                   res)))
-             ;; Pruning lookahead
-             (let [width (:width *options*)]
+  "Given printer options, returns a transducer which annotate the right-side
+  of groups on their :begin nodes.  This includes the pruning algorithm which
+  will annotate some :begin nodes as being :too-far to the right without
+  calculating their exact sizes."
+  [{:keys [width] :as options}]
+  (fn [rf]
+    (let [pos (volatile! 0)
+          bufs (volatile! empty-deque)]
+      (fn
+        ([] (rf))
+        ([res] (rf res))
+        ([res {:keys [op right] :as node}]
+         (let [buffers @bufs]
+           (if (empty? buffers)
+             (if (= op :begin)
+               ;; Buffer groups
+               (let [position* (+ right width)
+                     buffer {:position position* :nodes empty-deque}]
+                 (vreset! pos position*)
+                 (vreset! bufs (double-list buffer))
+                 res)
+               ;; Emit unbuffered
+               (rf res node))
+             (if (= op :end)
+               ;; Pop buffer
+               (let [buffer (peek buffers)
+                     buffers* (pop buffers)
+                     begin {:op :begin :right right}
+                     nodes (conjlr begin (:nodes buffer) node)]
+                 (if (empty? buffers*)
+                   (do
+                     (vreset! pos 0)
+                     (vreset! bufs empty-deque)
+                     (reduce rf res nodes))
+                   (do
+                     (vreset! bufs (update-right buffers* update-in [:nodes]
+                                                 ft-concat nodes))
+                     res)))
+               ;; Pruning lookahead
                (loop [buffers* (if (= op :begin)
                                  (conjr buffers {:position (+ right width)
                                                  :nodes empty-deque})
@@ -163,84 +162,88 @@
                        ;; Interior group
                        (do
                          (vreset! pos (:position (first buffers**)))
-                         (recur buffers** res*)))))))
-          )))))))
+                         (recur buffers** res*))))))
+            ))))))))
 
 
 (defn format-nodes
-  "A transducer which produces the fully laid-out strings."
-  [rf]
-  (let [fits (volatile! 0)
-        length (volatile! (:width *options*))
-        tab-stops (volatile! '(0)) ; Technically, this is an unbounded stack...
-        column (volatile! 0)
-        width (:width *options*)]
-    (fn
-      ([] (rf))
-      ([res] (rf res))
-      ([res {:keys [op right] :as node}]
-       (let [indent (peek @tab-stops)]
-         (case op
-           :text
-             (let [text (:text node)
-                   res* (if (zero? @column)
-                          (do (vswap! column + indent)
-                              (rf res (apply str (repeat indent \space))))
-                          res)]
-               (vswap! column + (count text))
-               (rf res* text))
-           :escaped
-             (let [text (:text node)
-                   res* (if (zero? @column)
-                          (do (vswap! column + indent)
-                              (rf res (apply str (repeat indent \space))))
-                          res)]
-               (vswap! column inc)
-               (rf res* text))
-           :pass
-             (rf res (:text node))
-           :line
-             (if (zero? @fits)
+  "Given printer options, returns a transducer which produces the fully
+  laid-out strings."
+  [{:keys [width] :as options}]
+  (fn [rf]
+    (let [fits (volatile! 0)
+          length (volatile! width)
+          tab-stops (volatile! '(0)) ; Technically, an unbounded stack...
+          column (volatile! 0)]
+      (fn
+        ([] (rf))
+        ([res] (rf res))
+        ([res {:keys [op right] :as node}]
+         (let [indent (peek @tab-stops)]
+           (case op
+             :text
+               (let [text (:text node)
+                     res* (if (zero? @column)
+                            (do (vswap! column + indent)
+                                (rf res (apply str (repeat indent \space))))
+                            res)]
+                 (vswap! column + (count text))
+                 (rf res* text))
+             :escaped
+               (let [text (:text node)
+                     res* (if (zero? @column)
+                            (do (vswap! column + indent)
+                                (rf res (apply str (repeat indent \space))))
+                            res)]
+                 (vswap! column inc)
+                 (rf res* text))
+             :pass
+               (rf res (:text node))
+             :line
+               (if (zero? @fits)
+                 (do
+                   (vreset! length (- (+ right width) indent))
+                   (vreset! column 0)
+                   (rf res "\n"))
+                 (let [inline (:inline node)]
+                   (vswap! column + (count inline))
+                   (rf res inline)))
+             :break
                (do
                  (vreset! length (- (+ right width) indent))
                  (vreset! column 0)
                  (rf res "\n"))
-               (let [inline (:inline node)]
-                 (vswap! column + (count inline))
-                 (rf res inline)))
-           :break
-             (do
-               (vreset! length (- (+ right width) indent))
-               (vreset! column 0)
-               (rf res "\n"))
-           :nest
-             (do (vswap! tab-stops conj (+ indent (:offset node)))
-                 res)
-           :align
-             (do (vswap! tab-stops conj (+ @column (:offset node)))
-                 res)
-           :outdent
-             (do (vswap! tab-stops pop)
-                 res)
-           :begin
-             (do (vreset! fits (cond
-                                 (pos? @fits) (inc @fits)
-                                 (= right :too-far) 0
-                                 (<= right @length) 1
-                                 :else 0))
-                 res)
-           :end
-             (do (vreset! fits (max 0 (dec @fits)))
-                 res)
-           (throw (Exception. (str "Unexpected op on node: " node)))))
-       ))))
+             :nest
+               (do (vswap! tab-stops conj (+ indent (:offset node)))
+                   res)
+             :align
+               (do (vswap! tab-stops conj (+ @column (:offset node)))
+                   res)
+             :outdent
+               (do (vswap! tab-stops pop)
+                   res)
+             :begin
+               (do (vreset! fits (cond
+                                   (pos? @fits) (inc @fits)
+                                   (= right :too-far) 0
+                                   (<= right @length) 1
+                                   :else 0))
+                   res)
+             :end
+               (do (vreset! fits (max 0 (dec @fits)))
+                   res)
+             (throw (Exception. (str "Unexpected op on node: " node)))))
+         )))))
 
 
 
 (defn pprint-document [document options]
-  (binding [*options* (merge *options* options)]
+  (let [options (merge {:width 70} options)]
     (->> (serialize document)
-         (eduction annotate-rights annotate-begins format-nodes)
+         (eduction
+           annotate-rights
+           (annotate-begins options)
+           (format-nodes options))
          (run! print)))
   (println))
 
@@ -265,13 +268,13 @@
 
   (serialize doc1)
 
-  (binding [*options* {:width 3}]
+  (let [options {:width 3}]
     (->> doc3
          serialize
          (into [] (comp
                     annotate-rights
-                    annotate-begins
-                    format-nodes
+                    (annotate-begins options)
+                    (format-nodes options)
                     ))
          ;(run! print)
          clojure.pprint/pprint
