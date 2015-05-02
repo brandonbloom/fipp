@@ -97,11 +97,19 @@
  #{:baz :bar :foo}]
 "))
 
+(def mdata (tagged-literal 'foo (with-meta [] {:x 1})))
+
 (deftest pprint-edn
-  (is (= (clean (with-out-str (pprint data {:width 70}))) wide))
-  (is (= (clean (with-out-str (pprint data {:width 30}))) narrow)))
+  (testing "Pretty printing Edn without metadata"
+    (is (= (clean (with-out-str (pprint data {:width 70}))) wide))
+    (is (= (clean (with-out-str (pprint data {:width 30}))) narrow)))
+  (testing "Pretty printing metadata"
+    (is (= (clean (with-out-str (pprint mdata {:width 70 :print-meta true})))
+           "#foo ^{:x 1} []"))))
 
 (comment
+
+  (pprint (with-meta (tagged-literal 'x 1) {:blah true}))
 
   (println (clean (with-out-str (pprint data {:width 70}))))
 

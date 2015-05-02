@@ -126,7 +126,9 @@
 
   (visit-tagged [this {:keys [tag form]}]
     [:group "#" (pr-str tag)
-            (when-not (coll? form) " ")
+            (when (or (and print-meta (meta form))
+                      (not (coll? form)))
+              " ")
             (visit this form)])
 
   (visit-unknown [this x]
