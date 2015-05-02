@@ -228,7 +228,7 @@
          annotate-rights
          annotate-begins
          format-nodes
-         (t/each print)))
+         (run! print)))
   (println))
 
 
@@ -266,7 +266,7 @@
          annotate-begins
          format-nodes
          ;clojure.pprint/pprint
-         (t/each print)
+         (run! print)
          ;(into [])
          )
     ;nil
