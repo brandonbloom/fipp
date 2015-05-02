@@ -111,74 +111,63 @@
       ([] (rf))
       ([res] (rf res))
       ([res {:keys [op right] :as node}]
-
-
        (let [position @pos
              buffers @bufs]
-
-
-      (if (empty? buffers)
-        (if (= op :begin)
-          ;; Buffer groups
-          (let [position* (+ right (:width *options*))
-                buffer {:position position* :nodes empty-deque}]
-            (vreset! pos position*)
-            (vreset! bufs (double-list buffer))
-            res)
-          ;; Emit unbuffered
-          (rf res node))
-        (if (= op :end)
-          ;; Pop buffer
-          (let [buffer (peek buffers)
-                buffers* (pop buffers)
-                begin {:op :begin :right right}
-                nodes (conjlr begin (:nodes buffer) node)]
-            (if (empty? buffers*)
-              (do
-                (vreset! pos 0)
-                (vreset! bufs empty-deque)
-                (reduce rf res nodes))
-              (do
-                (vreset! bufs (update-right buffers* update-in [:nodes]
-                                            ft-concat nodes))
-                res)))
-          ;; Pruning lookahead
-          (let [width (:width *options*)]
-            (loop [position* position
-                   buffers* (if (= op :begin)
-                              (conjr buffers {:position (+ right width)
-                                              :nodes empty-deque})
-                              (update-right buffers update-in [:nodes]
-                                            conjr node))
-                   emit nil]
-              (if (and (<= right position*) (<= (count buffers*) width))
-                ;; Not too far
-                (do
-                  (vreset! pos position*)
-                  (vreset! bufs buffers*)
-                  (reduce rf res emit))
-                ;; Too far
-                (let [buffer (first buffers*)
-                      buffers** (next buffers*)
-                      begin {:op :begin, :right :too-far}
-                      emit* (concat emit [begin] (:nodes buffer))]
-                  (if (empty? buffers**)
-                    ;; Root buffered group
-                    (do
-                      (vreset! pos 0)
-                      (vreset! bufs empty-deque)
-                      (reduce rf res emit*))
-                    ;; Interior group
-                    (let [position** (:position (first buffers**))]
-                      (recur position** buffers** emit*)))))))
-          ))
-
-      )
-
-
-
-
-         ))))
+         (if (empty? buffers)
+           (if (= op :begin)
+             ;; Buffer groups
+             (let [position* (+ right (:width *options*))
+                   buffer {:position position* :nodes empty-deque}]
+               (vreset! pos position*)
+               (vreset! bufs (double-list buffer))
+               res)
+             ;; Emit unbuffered
+             (rf res node))
+           (if (= op :end)
+             ;; Pop buffer
+             (let [buffer (peek buffers)
+                   buffers* (pop buffers)
+                   begin {:op :begin :right right}
+                   nodes (conjlr begin (:nodes buffer) node)]
+               (if (empty? buffers*)
+                 (do
+                   (vreset! pos 0)
+                   (vreset! bufs empty-deque)
+                   (reduce rf res nodes))
+                 (do
+                   (vreset! bufs (update-right buffers* update-in [:nodes]
+                                               ft-concat nodes))
+                   res)))
+             ;; Pruning lookahead
+             (let [width (:width *options*)]
+               (loop [position* position
+                      buffers* (if (= op :begin)
+                                 (conjr buffers {:position (+ right width)
+                                                 :nodes empty-deque})
+                                 (update-right buffers update-in [:nodes]
+                                               conjr node))
+                      emit nil]
+                 (if (and (<= right position*) (<= (count buffers*) width))
+                   ;; Not too far
+                   (do
+                     (vreset! pos position*)
+                     (vreset! bufs buffers*)
+                     (reduce rf res emit))
+                   ;; Too far
+                   (let [buffer (first buffers*)
+                         buffers** (next buffers*)
+                         begin {:op :begin, :right :too-far}
+                         emit* (concat emit [begin] (:nodes buffer))]
+                     (if (empty? buffers**)
+                       ;; Root buffered group
+                       (do
+                         (vreset! pos 0)
+                         (vreset! bufs empty-deque)
+                         (reduce rf res emit*))
+                       ;; Interior group
+                       (let [position** (:position (first buffers**))]
+                         (recur position** buffers** emit*)))))))
+          )))))))
 
 
 ;;; Format the annotated document stream.
@@ -192,66 +181,62 @@
       ([] (rf))
       ([res] (rf res))
       ([res {:keys [op right] :as node}]
-
-
-      (let [indent (peek @tab-stops)
-            width (:width *options*)]
-        (case op
-          :text
-            (let [text (:text node)
-                  res* (if (zero? @column)
-                         (do (vswap! column + indent)
-                             (rf res (apply str (repeat indent \space))))
-                         res)]
-              (vswap! column + (count text))
-              (rf res* text))
-          :escaped
-            (let [text (:text node)
-                  res* (if (zero? @column)
-                         (do (vswap! column + indent)
-                             (rf res (apply str (repeat indent \space))))
-                         res)]
-              (vswap! column inc)
-              (rf res* text))
-          :pass
-            (rf res (:text node))
-          :line
-            (if (zero? @fits)
-              (do
-                (vreset! length (- (+ right width) indent))
-                (vreset! column 0)
-                (rf res "\n"))
-              (let [inline (:inline node)]
-                (vswap! column + (count inline))
-                (rf res inline)))
-          :break
-            (do
-              (vreset! length (- (+ right width) indent))
-              (vreset! column 0)
-              (rf res "\n"))
-          :nest
-            (do (vswap! tab-stops conj (+ indent (:offset node)))
-                res)
-          :align
-            (do (vswap! tab-stops conj (+ @column (:offset node)))
-                res)
-          :outdent
-            (do (vswap! tab-stops pop)
-                res)
-          :begin
-            (do (vreset! fits (cond
-                                (pos? @fits) (inc @fits)
-                                (= right :too-far) 0
-                                (<= right @length) 1
-                                :else 0))
-                res)
-          :end
-            (do (vreset! fits (max 0 (dec @fits)))
-                res)
-          (throw-op node))))
-
-
-       )))
+       (let [indent (peek @tab-stops)
+             width (:width *options*)]
+         (case op
+           :text
+             (let [text (:text node)
+                   res* (if (zero? @column)
+                          (do (vswap! column + indent)
+                              (rf res (apply str (repeat indent \space))))
+                          res)]
+               (vswap! column + (count text))
+               (rf res* text))
+           :escaped
+             (let [text (:text node)
+                   res* (if (zero? @column)
+                          (do (vswap! column + indent)
+                              (rf res (apply str (repeat indent \space))))
+                          res)]
+               (vswap! column inc)
+               (rf res* text))
+           :pass
+             (rf res (:text node))
+           :line
+             (if (zero? @fits)
+               (do
+                 (vreset! length (- (+ right width) indent))
+                 (vreset! column 0)
+                 (rf res "\n"))
+               (let [inline (:inline node)]
+                 (vswap! column + (count inline))
+                 (rf res inline)))
+           :break
+             (do
+               (vreset! length (- (+ right width) indent))
+               (vreset! column 0)
+               (rf res "\n"))
+           :nest
+             (do (vswap! tab-stops conj (+ indent (:offset node)))
+                 res)
+           :align
+             (do (vswap! tab-stops conj (+ @column (:offset node)))
+                 res)
+           :outdent
+             (do (vswap! tab-stops pop)
+                 res)
+           :begin
+             (do (vreset! fits (cond
+                                 (pos? @fits) (inc @fits)
+                                 (= right :too-far) 0
+                                 (<= right @length) 1
+                                 :else 0))
+                 res)
+           :end
+             (do (vreset! fits (max 0 (dec @fits)))
+                 res)
+           (throw-op node)))
+       ))))
 
 
 
@@ -277,17 +262,11 @@
   (serialize [:span "apple" [:line ","] "ball"])
 
   (def doc1 [:group "A" :line [:group "B" :line "C"]])
-  (serialize doc1)
-
-  (defn map-dbg [prefix coll]
-    (r/map (fn [x]
-             (print prefix)
-             (prn x)
-             x)
-           coll))
-
   (def doc2 [:group "A" :line [:nest 2 "B" :line "C"] :line "D"])
-  (def doc3 [:group "A" :line [:nest 2 "B-XYZ" [:align -3 :line "C"]] :line "D"])
+  (def doc3 [:group "A" :line
+             [:nest 2 "B-XYZ" [:align -3 :line "C"]] :line "D"])
+
+  (serialize doc1)
 
   (binding [*options* {:width 3}]
     (->> doc3
@@ -318,32 +297,26 @@
       {:width 6}))
 
   (def ex1
-
-[:group "["
-    [:nest 2
-        [:line ""] "0,"
-        :line "1,"
-        :line "2,"
-        :line "3"
-        [:line ""]]
-    "]"]
-
-   )
+    [:group "["
+        [:nest 2
+            [:line ""] "0,"
+            :line "1,"
+            :line "2,"
+            :line "3"
+            [:line ""]]
+        "]"])
 
   (pprint-document ex1 {:width 20})
   (pprint-document ex1 {:width 6})
 
   (def ex2
-
-[:span "["
-    [:align
-        [:group [:line ""]] "0,"
-        [:group :line] "1,"
-        [:group :line] "2,"
-        [:group :line] "3"]
-    "]"]
-
-   )
+    [:span "["
+        [:align
+            [:group [:line ""]] "0,"
+            [:group :line] "1,"
+            [:group :line] "2,"
+            [:group :line] "3"]
+        "]"])
 
   (pprint-document ex2 {:width 20})
   (pprint-document ex2 {:width 6})
