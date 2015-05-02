@@ -24,6 +24,11 @@ To depend on this version with Lein, add the following to your `project.clj`:
 [fipp "0.5.2"]
 ```
 
+This version of Fipp works with Clojure 1.6 or newer.
+
+See [the master branch](https://github.com/brandonbloom/fipp/tree/master) for
+a version of Fipp designed to take advantage of Clojure 1.7 or newer features.
+
 
 ### Colorization & REPL Integration
 
