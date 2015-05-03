@@ -120,6 +120,8 @@
                      (vreset! bufs deque/empty)
                      (reduce rf res nodes))
                    (do
+                     (assert (vector? buffers*))
+                     (assert (vector? nodes))
                      (vreset! bufs (update-right buffers* update-in [:nodes]
                                                  deque/concat nodes))
                      res)))
@@ -128,8 +130,9 @@
                                  (deque/conjr buffers
                                               {:position (+ right width)
                                                :nodes deque/empty})
+                                 (do (assert (vector? buffers) (pr-str (class buffers)))
                                  (update-right buffers update-in [:nodes]
-                                               deque/conjr node))
+                                               deque/conjr node)))
                       res res]
                  (if (and (<= right @pos) (<= (count buffers*) width))
                    ;; Not too far
