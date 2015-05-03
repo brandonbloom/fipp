@@ -1,6 +1,6 @@
 # Fast Idiomatic Pretty-Printer
 
-Fipp is a better pretty printer for Clojure.
+Fipp is a better pretty printer for Clojure and ClojureScript.
 
 Like clojure.pprint, this pretty printer has a *linear runtime* and uses
 *bounded space*. However, unlike clojure.pprint, Fipp's implementation is
@@ -21,13 +21,15 @@ Fipp artifacts are [published on Clojars](https://clojars.org/fipp).
 To depend on this version with Lein, add the following to your `project.clj`:
 
 ```clojure
-[fipp "0.5.2"]
+[fipp "0.6.0"]
 ```
 
 This version of Fipp works with Clojure 1.7 or newer.
 
 See [the v0.5 branch](https://github.com/brandonbloom/fipp/tree/v0.5) for
 a version of Fipp that works with Clojure 1.6.
+
+ClojureScript support is currently considered experimental.
 
 
 ### Colorization & REPL Integration
