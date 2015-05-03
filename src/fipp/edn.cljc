@@ -1,16 +1,17 @@
 (ns fipp.edn
   "Provides a pretty document serializer and pprint fn for Clojure/EDN forms.
   See fipp.clojure for pretty printing Clojure code."
-  (:require [fipp.visit :refer [IVisitor visit visit*]]
+  (:require [fipp.ednize :refer [-edn]]
+            [fipp.visit :refer [visit visit*]]
             [fipp.engine :refer (pprint-document)]))
 
 (defrecord EdnPrinter [print-meta symbols]
 
-  IVisitor
+  fipp.visit.IVisitor
 
 
   (visit-unknown [this x]
-    (visit this (fipp.visit/-edn x)))
+    (visit this (-edn x)))
 
 
   (visit-nil [this]

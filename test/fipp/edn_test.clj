@@ -118,8 +118,10 @@
 
 (comment
 
-  (pprint (with-meta (tagged-literal 'x 1) {:blah true}))
+  (pprint (tagged-literal 'foo (with-meta [] {:blah true}))
+          ;(with-meta [] {:blah true})
+          {:print-meta true})
 
-  (println (clean (with-out-str (pprint data {:width 70}))))
+  (println (clean (with-out-str (pprint (atom 1)))))
 
 )
