@@ -166,7 +166,8 @@
   (into {} (for [[pretty-fn syms] dispatch
                  sym syms
                  sym (cons sym (when-not (special-symbol? sym)
-                                 [(symbol "clojure.core" (name sym))]))]
+                                 [(symbol "clojure.core" (name sym))
+                                  (symbol "cljs.core" (name sym))]))]
              [sym pretty-fn])))
 
 (def default-symbols
