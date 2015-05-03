@@ -17,6 +17,11 @@
         id (format "0x%x" (System/identityHashCode o))]
     (tagged-literal 'object [cls id rep])))
 
+(defn format-hack [v x]
+  (let [local ^java.lang.ThreadLocal @v
+        fmt ^java.text.SimpleDateFormat (.get local)]
+    (.format fmt x)))
+
 (extend-protocol IEdn
 
   java.lang.Object
@@ -50,15 +55,15 @@
 
   java.util.Date
   (-edn [x]
-    (let [fmt (.get @#'clojure.instant/thread-local-utc-date-format)]
-      (tagged-literal 'inst (.format fmt x))))
+    (let [s (format-hack #'clojure.instant/thread-local-utc-date-format x)]
+      (tagged-literal 'inst s)))
 
   ;TODO (defmethod print-method java.util.Calendar
 
   java.sql.Timestamp
   (-edn [x]
-    (let [fmt (.get @#'clojure.instant/thread-local-utc-timestamp-format)]
-      (tagged-literal 'inst (.format fmt x))))
+    (let [s (format-hack #'clojure.instant/thread-local-utc-timestamp-format x)]
+      (tagged-literal 'inst s)))
 
   java.util.UUID
   (-edn [x]
