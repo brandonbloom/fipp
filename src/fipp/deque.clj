@@ -7,6 +7,9 @@
 
 (def empty (create))
 
+(defn popl [v]
+  (next v))
+
 (def conjl (fnil ftree/conjl empty))
 
 (def conjr (fnil conj empty))

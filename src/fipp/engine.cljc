@@ -137,7 +137,7 @@
                        res)
                    ;; Too far
                    (let [buffer (first buffers*)
-                         buffers** (next buffers*)
+                         buffers** (deque/popl buffers*)
                          begin {:op :begin, :right :too-far}
                          res* (rf res begin)
                          res* (reduce rf res* (:nodes buffer))]

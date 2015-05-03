@@ -7,6 +7,9 @@
 
 (def empty [])
 
+(defn popl [v]
+  (subvec v 1))
+
 (def conjr (fnil conj empty))
 
 (defn conjlr [l deque r]
