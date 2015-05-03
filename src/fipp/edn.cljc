@@ -7,7 +7,7 @@
 
 (defrecord EdnPrinter [print-meta symbols]
 
-  fipp.visit.IVisitor
+  fipp.visit/IVisitor
 
 
   (visit-unknown [this x]
