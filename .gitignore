@@ -6,3 +6,4 @@ pom.xml*
 *.jar
 *.class
 .lein-*
+/out

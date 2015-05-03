@@ -2,19 +2,7 @@
   "See: Oleg Kiselyov, Simon Peyton-Jones, and Amr Sabry
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
-            [clojure.data.finger-tree :as ftree
-             :refer (double-list ft-concat)]))
-
-
-;;; Some double-list (deque / 2-3 finger-tree) utils
-
-(def empty-deque (double-list))
-
-(def conjl (fnil ftree/conjl empty-deque))
-(def conjr (fnil conj empty-deque))
-
-(defn conjlr [l deque r]
-  (conj (conjl deque l) r))
+            [fipp.deque :as deque]))
 
 
 ;;; Serialize document into a stream
@@ -28,8 +16,7 @@
     (string? doc) [{:op :text, :text doc}]
     (keyword? doc) (serialize-node [doc])
     (vector? doc) (serialize-node doc)
-    :else (throw (Exception.
-                   (str "Unexpected class for doc node: " (class doc))))))
+    :else (throw (ex-info "Unexpected class for doc node" {:node doc}))))
 
 ;; Primitives
 ;; See doc/primitives.md for details.
@@ -95,7 +82,7 @@
 
 
 (defn update-right [deque f & args]
-  (conjr (pop deque) (apply f (peek deque) args)))
+  (deque/conjr (pop deque) (apply f (peek deque) args)))
 
 (defn annotate-begins
   "Given printing options, returns a transducer which annotate the right-side
@@ -105,7 +92,7 @@
   [{:keys [width] :as options}]
   (fn [rf]
     (let [pos (volatile! 0)
-          bufs (volatile! empty-deque)]
+          bufs (volatile! deque/empty)]
       (fn
         ([] (rf))
         ([res] (rf res))
@@ -115,9 +102,9 @@
              (if (= op :begin)
                ;; Buffer groups
                (let [position* (+ right width)
-                     buffer {:position position* :nodes empty-deque}]
+                     buffer {:position position* :nodes deque/empty}]
                  (vreset! pos position*)
-                 (vreset! bufs (double-list buffer))
+                 (vreset! bufs (deque/create buffer))
                  res)
                ;; Emit unbuffered
                (rf res node))
@@ -126,22 +113,23 @@
                (let [buffer (peek buffers)
                      buffers* (pop buffers)
                      begin {:op :begin :right right}
-                     nodes (conjlr begin (:nodes buffer) node)]
+                     nodes (deque/conjlr begin (:nodes buffer) node)]
                  (if (empty? buffers*)
                    (do
                      (vreset! pos 0)
-                     (vreset! bufs empty-deque)
+                     (vreset! bufs deque/empty)
                      (reduce rf res nodes))
                    (do
                      (vreset! bufs (update-right buffers* update-in [:nodes]
-                                                 ft-concat nodes))
+                                                 deque/concat nodes))
                      res)))
                ;; Pruning lookahead
                (loop [buffers* (if (= op :begin)
-                                 (conjr buffers {:position (+ right width)
-                                                 :nodes empty-deque})
+                                 (deque/conjr buffers
+                                              {:position (+ right width)
+                                               :nodes deque/empty})
                                  (update-right buffers update-in [:nodes]
-                                               conjr node))
+                                               deque/conjr node))
                       res res]
                  (if (and (<= right @pos) (<= (count buffers*) width))
                    ;; Not too far
@@ -157,7 +145,7 @@
                        ;; Root buffered group
                        (do
                          (vreset! pos 0)
-                         (vreset! bufs empty-deque)
+                         (vreset! bufs deque/empty)
                          res*)
                        ;; Interior group
                        (do
@@ -232,10 +220,13 @@
              :end
                (do (vreset! fits (max 0 (dec @fits)))
                    res)
-             (throw (Exception. (str "Unexpected op on node: " node)))))
+             (throw (ex-info "Unexpected node op" {:node node}))))
          )))))
 
 
+;XXX CLJS-1239
+#?(:cljs (defn eduction [& xforms]
+           (cljs.core/eduction (apply comp (butlast xforms)) (last xforms))))
 
 (defn pprint-document [document options]
   (let [options (merge {:width 70} options)]
