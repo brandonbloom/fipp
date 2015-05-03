@@ -7,4 +7,5 @@
                  ;; Used on JVM.
                  [org.clojure/data.finger-tree "0.0.2"]
                  ;; Used for JS.
-                 [org.clojure/core.rrb-vector "0.0.11"]])
+                 [org.clojure/core.rrb-vector "0.0.11"]]
+  :profiles {:dev {:dependencies [[criterium "0.4.3"]]}})

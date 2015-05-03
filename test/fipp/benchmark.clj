@@ -1,62 +1,26 @@
 (ns fipp.benchmark
   (:require [clojure.pprint]
-            [fipp.edn]))
+            [fipp.edn]
+            [fipp.clojure]
+            [criterium.core :refer [bench]]))
 
-(defn bench [f n x]
-  (prn)
-  (prn f)
-  (time
-    (dotimes [i n]
-      (with-out-str
-        (f x)))))
+(def benched-fns [
+  ;prn
+  fipp.edn/pprint
+  fipp.clojure/pprint
+  ;clojure.pprint/pprint
+])
 
-(defn bench-all [n x]
-  (bench prn n x)
-  (bench fipp.edn/pprint n x)
-  (bench clojure.pprint/pprint n x))
+(def samples {
+  :long (vec (range 10000))
+  ;; Dirty hacky source of test data:
+  :mixed (read-string {:read-cond :allow} (str "[" (slurp "src/fipp/engine.cljc") "]"))
+})
 
-(defn random-value []
-  (let [f (rand-nth [identity keyword symbol])
-        x (rand-nth ["foo" "bar" "baz" "abc123" "qwertyuiop"])]
-    (f x)))
-
-(defn random-seq []
-  (let [n (+ (rand-int 7) 2)]
-    (repeatedly n random-value)))
-
-(defn random-map []
-  (reduce (fn [m [v & path]]
-            (assoc-in m path v)) ; this sometimes fails, come up with some better random-map
-          {}
-          (repeatedly 5 random-seq)))
-
-(comment
-
-
-  (fipp.edn/pprint (random-map))
-
-
-  (bench-all 300 (vec (range 1000)))
-
-;  #object[clojure.core$prn 0x7ca1273f "clojure.core$prn@7ca1273f"]
-;  "Elapsed time: 124.948 msecs"
-;
-;  #object[fipp.edn$pprint 0x25a8f408 "fipp.edn$pprint@25a8f408"]
-;  "Elapsed time: 2819.549 msecs"
-;
-;  #object[clojure.pprint$pprint 0x756f13ae "clojure.pprint$pprint@756f13ae"]
-;  "Elapsed time: 26679.661 msecs"
-
-
-  (bench-all 2000 (random-map))
-
-;  #object[clojure.core$prn 0x7ca1273f "clojure.core$prn@7ca1273f"]
-;  "Elapsed time: 49.925 msecs"
-;
-;  #object[fipp.edn$pprint 0x25a8f408 "fipp.edn$pprint@25a8f408"]
-;  "Elapsed time: 1730.908 msecs"
-;
-;  #object[clojure.pprint$pprint 0x756f13ae "clojure.pprint$pprint@756f13ae"]
-;  "Elapsed time: 4655.917 msecs"
-
-)
+;; lein run -m fipp.benchmark
+(defn -main []
+  (doseq [f benched-fns
+          [k v] samples]
+    (println "Testing " f " on " k)
+    (criterium.core/with-progress-reporting
+      (bench (with-out-str (f v))))))
