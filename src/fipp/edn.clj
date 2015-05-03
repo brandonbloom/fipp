@@ -4,7 +4,7 @@
   (:require [fipp.visit :refer [IVisitor visit visit*]]
             [fipp.engine :refer (pprint-document)]))
 
-(defrecord EdnPrinter [print-meta]
+(defrecord EdnPrinter [print-meta symbols]
 
   IVisitor
 
@@ -35,7 +35,9 @@
     [:text (pr-str x)])
 
   (visit-seq [this x]
-    [:group "(" [:align (interpose :line (map #(visit this %) x))] ")"])
+    (if-let [pretty (symbols (first x))]
+      (pretty this x)
+      [:group "(" [:align (interpose :line (map #(visit this %) x))] ")"]))
 
   (visit-vector [this x]
     [:group "[" [:align (interpose :line (map #(visit this %) x))] "]"])
@@ -73,6 +75,8 @@
 (defn pprint
   ([x] (pprint x {}))
   ([x options]
-   (let [printer (map->EdnPrinter (merge {:print-meta *print-meta*} options))]
+   (let [printer (map->EdnPrinter (merge {:print-meta *print-meta*
+                                          :symbols {}}
+                                         options))]
      (binding [*print-meta* false]
        (pprint-document (visit printer x) options)))))

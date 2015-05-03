@@ -2,18 +2,8 @@
   "Provides a pretty document serializer and pprint fn for Clojure code.
   See fipp.edn for pretty printing Clojure/EDN data structures"
   (:require [clojure.walk :as walk]
-            [fipp.engine :refer (pprint-document)]))
-
-;;TODO leverage fipp.edn
-
-
-(defprotocol IPretty
-  (-pretty [x ctx]))
-
-(defn pretty [x ctx]
-  (if-let [m (and (:print-meta ctx) (meta x))]
-    [:align [:span "^" (-pretty m ctx)] :line (-pretty x ctx)]
-    (-pretty x ctx)))
+            [fipp.visit :as v :refer [visit]]
+            [fipp.edn :as edn]))
 
 
 ;;; Helper functions
@@ -30,82 +20,82 @@
 
 ;;; Format case, cond, condp
 
-(defn pretty-cond-clause [[test result] ctx]
-  [:group (-pretty test ctx) :line [:nest 2 (pretty result ctx)]])
+(defn pretty-cond-clause [p [test result]]
+  [:group (visit p test) :line [:nest 2 (visit p result)]])
 
-(defn pretty-case [[head expr & more] ctx]
+(defn pretty-case [p [head expr & more]]
   (let [clauses (partition 2 more)
         default (when (odd? (count more)) (last more))]
     (list-group
-      (-pretty head ctx) " " (pretty expr ctx) :line
-      (block (concat (map #(pretty-cond-clause % ctx) clauses)
-                     (when default [(pretty default ctx)]))))))
+      (visit p head) " " (visit p expr) :line
+      (block (concat (map #(pretty-cond-clause p %) clauses)
+                     (when default [(visit p default)]))))))
 
-(defn pretty-cond [[head & more] ctx]
+(defn pretty-cond [p [head & more]]
   (let [clauses (partition 2 more)]
     (list-group
-      (-pretty head ctx) :line
-      (block (map #(pretty-cond-clause % ctx) clauses)))))
+      (visit p head) :line
+      (block (map #(pretty-cond-clause p %) clauses)))))
 
 ;;TODO this will get tripped up by ternary (test :>> result) clauses
-(defn pretty-condp [[head pred expr & more] ctx]
+(defn pretty-condp [p [head pred expr & more]]
   (let [clauses (partition 2 more)
         default (when (odd? (count more)) (last more))]
     (list-group
-      (-pretty head ctx) " " (-pretty pred ctx) " " (pretty expr ctx) :line
-      (block (concat (map #(pretty-cond-clause % ctx) clauses)
-                     (when default [(pretty default ctx)]))))))
+      (visit p head) " " (visit p pred) " " (visit p expr) :line
+      (block (concat (map #(pretty-cond-clause p %) clauses)
+                     (when default [(visit p default)]))))))
 
 
 ;;; Format arrows, def, if, and similar
 
-(defn pretty-arrow [[head & stmts] ctx]
+(defn pretty-arrow [p [head & stmts]]
   (list-group
-    (-pretty head ctx) " "
-    [:align (interpose :line (map #(pretty % ctx) stmts))]))
+    (visit p head) " "
+    [:align (interpose :line (map #(visit p %) stmts))]))
 
 ;;TODO we're also using this to format def – should that be separate?
-(defn pretty-if [[head test & more] ctx]
+(defn pretty-if [p [head test & more]]
   (list-group
-    (-pretty head ctx) " " (pretty test ctx) :line
-    (block (map #(pretty % ctx) more))))
+    (visit p head) " " (visit p test) :line
+    (block (map #(visit p %) more))))
 
 
 ;;; Format defn, fn, and similar
 
-(defn pretty-method [[params & body] ctx]
+(defn pretty-method [p [params & body]]
   (list-group
-    (-pretty params ctx) :line
-    (block (map #(pretty % ctx) body))))
+    (visit p params) :line
+    (block (map #(visit p %) body))))
 
-(defn pretty-defn [[head fn-name & more] ctx]
+(defn pretty-defn [p [head fn-name & more]]
   (let [[docstring more] (maybe-a string? more)
         [attr-map more]  (maybe-a map?    more)
         [params body]    (maybe-a vector? more)
         params-on-first-line?  (and params (nil? docstring) (nil? attr-map))
         params-after-attr-map? (and params (not params-on-first-line?))]
     (list-group
-      (concat [(-pretty head ctx) " " (pretty fn-name ctx)]
-              (when params-on-first-line? [" " (-pretty params ctx)]))
+      (concat [(visit p head) " " (visit p fn-name)]
+              (when params-on-first-line? [" " (visit p params)]))
       :line
-      (block (concat (when docstring [(-pretty docstring ctx)])
-                     (when attr-map  [(-pretty attr-map ctx)])
-                     (when params-after-attr-map? [(-pretty params ctx)])
-                     (if body (map #(pretty % ctx) body)
-                              (map #(pretty-method % ctx) more)))))))
+      (block (concat (when docstring [(visit p docstring)])
+                     (when attr-map  [(visit p attr-map)])
+                     (when params-after-attr-map? [(visit p params)])
+                     (if body (map #(visit p %) body)
+                              (map #(pretty-method p %) more)))))))
 
-(defn pretty-fn [[head & more] ctx]
+(defn pretty-fn [p [head & more]]
   (let [[fn-name more] (maybe-a symbol? more)
         [params body]  (maybe-a vector? more)]
     (list-group
-      (concat [(-pretty head ctx)]
-              (when fn-name [" " (pretty fn-name ctx)])
-              (when params  [" " (-pretty params ctx)]))
+      (concat [(visit p head)]
+              (when fn-name [" " (visit p fn-name)])
+              (when params  [" " (visit p params)]))
       :line
-      (block (if body (map #(pretty % ctx) body)
-                      (map #(pretty-method % ctx) more))))))
+      (block (if body (map #(visit p %) body)
+                      (map #(pretty-method p %) more))))))
 
-(defn pretty-fn* [[_ params body :as form] ctx]
+(defn pretty-fn* [p [_ params body :as form]]
   (if (and (vector? params) (seq? body))
     (let [[inits rests] (split-with #(not= % '&) params)
           params* (merge (if (= (count inits) 1)
@@ -113,61 +103,61 @@
                            (zipmap inits (map #(symbol (str \% (inc %))) (range))))
                          (when (seq rests) {(second rests) '%&}))
           body* (walk/prewalk-replace params* body)]
-      [:group "#(" [:align 2 (interpose :line (map #(pretty % ctx) body*))] ")"])
-    (pretty-fn form ctx)))
+      [:group "#(" [:align 2 (interpose :line (map #(visit p %) body*))] ")"])
+    (pretty-fn p form)))
 
 
 ;;; Format ns
 
-(defn pretty-libspec [[head & clauses] ctx]
+(defn pretty-libspec [p [head & clauses]]
   (list-group
-    (-pretty head ctx) " "
-    [:align (interpose :line (map #(pretty % ctx) clauses))]))
+    (visit p head) " "
+    [:align (interpose :line (map #(visit p %) clauses))]))
 
-(defn pretty-ns [[head ns-sym & more] ctx]
+(defn pretty-ns [p [head ns-sym & more]]
   (let [[docstring more] (maybe-a string? more)
         [attr-map specs] (maybe-a map?    more)]
     (list-group
-      (-pretty head ctx) " " (pretty ns-sym ctx) :line
-      (block (concat (when docstring [(-pretty docstring ctx)])
-                     (when attr-map  [(-pretty attr-map ctx)])
-                     (map #(pretty-libspec % ctx) specs))))))
+      (visit p head) " " (visit p ns-sym) :line
+      (block (concat (when docstring [(visit p docstring)])
+                     (when attr-map  [(visit p attr-map)])
+                     (map #(pretty-libspec p %) specs))))))
 
 
 ;;; Format deref, quote, unquote, var
 
-(defn pretty-quote [[macro arg] ctx]
+(defn pretty-quote [p [macro arg]]
   [:span (case (keyword (name macro))
            :deref "@", :quote "'", :unquote "~", :var "#'")
-         (pretty arg ctx)])
+         (visit p arg)])
 
 ;;; Format let, loop, and similar
 
-(defn pretty-bindings [bvec ctx]
+(defn pretty-bindings [p bvec]
   (let [kvps (for [[k v] (partition 2 bvec)]
-               [:span (-pretty k ctx) " " [:align (pretty v ctx)]])]
+               [:span (visit p k) " " [:align (visit p v)]])]
     [:group "[" [:align (interpose [:line ", "] kvps)] "]"]))
 
-(defn pretty-let [[head bvec & body] ctx]
+(defn pretty-let [p [head bvec & body]]
   (list-group
-    (-pretty head ctx) " " (pretty-bindings bvec ctx) :line
-    (block (map #(pretty % ctx) body))))
+    (visit p head) " " (pretty-bindings p bvec) :line
+    (block (map #(visit p %) body))))
 
 
 ;;; Types and interfaces
 
-(defn pretty-impls [opts+specs ctx]
+(defn pretty-impls [p opts+specs]
   ;;TODO parse out opts
   ;;TODO parse specs and call pretty on methods
-  (block (map #(-pretty % ctx) opts+specs)))
+  (block (map #(visit p %) opts+specs)))
 
-(defn pretty-type [[head fields & opts+specs] ctx]
-  (list-group (-pretty head ctx) " " (pretty fields ctx) :line
-              (pretty-impls opts+specs ctx)))
+(defn pretty-type [p [head fields & opts+specs]]
+  (list-group (visit p head) " " (visit p fields) :line
+              (pretty-impls p opts+specs)))
 
-(defn pretty-reify [[head & opts+specs] ctx]
-  (list-group (-pretty head ctx) :line
-              (pretty-impls opts+specs ctx)))
+(defn pretty-reify [p [head & opts+specs]]
+  (list-group (visit p head) :line
+              (pretty-impls p opts+specs)))
 
 
 ;;; Symbol table
@@ -197,51 +187,7 @@
      pretty-reify '[reify]}))
 
 
-;;; Data structures
-
-(extend-protocol IPretty
-
-  nil
-  (-pretty [x ctx]
-    [:text "nil"])
-
-  java.lang.Object
-  (-pretty [x ctx]
-    [:text (pr-str x)])
-
-  clojure.lang.IPersistentVector
-  (-pretty [v ctx]
-    [:group "[" [:align (interpose [:group :line] (map #(pretty % ctx) v))] "]"])
-
-  clojure.lang.ISeq
-  (-pretty [s ctx]
-    (if-let [pretty-special (get (:symbols ctx) (first s))]
-      (pretty-special s ctx)
-      (list-group [:align 1 (interpose :line (map #(pretty % ctx) s))])))
-
-  clojure.lang.IPersistentMap
-  (-pretty [m ctx]
-    (let [kvps (for [[k v] m]
-                 [:span (-pretty k ctx) " " (pretty v ctx)])
-          doc [:group "{" [:align (interpose [:span "," :line] kvps)]  "}"]]
-      (if (record? m)
-        [:span "#" (-> m class .getName) doc]
-        doc)))
-
-  clojure.lang.IPersistentSet
-  (-pretty [s ctx]
-    [:group "#{" [:align (interpose [:group :line] (map #(pretty % ctx) s))] "}"])
-
-  ;TODO clojure.pprint supports clojure.lang.{IDeref,PersistentQueue} – do we want these?
-
-  )
-
-
 (defn pprint
   ([x] (pprint x {}))
   ([x options]
-   (let [symbols (:symbols options default-symbols)
-         ctx (merge {:symbols symbols :print-meta *print-meta*}
-                    (dissoc options :symbols))]
-     (binding [*print-meta* false]
-       (pprint-document (pretty x ctx) options)))))
+   (edn/pprint x (merge {:symbols default-symbols} options))))
