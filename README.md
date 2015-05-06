@@ -30,6 +30,8 @@ See [the v0.5 branch](https://github.com/brandonbloom/fipp/tree/v0.5) for
 a version of Fipp that works with Clojure 1.6.
 
 ClojureScript support is currently considered experimental.
+*NOTE:* It's actually busted in 0.6.0, fixed in (unreleased) 0.6.1-SNAPSHOT.
+I'll deploy a fixed version after the next version of ClojureScript is released.
 
 
 ### Colorization & REPL Integration
