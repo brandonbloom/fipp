@@ -4,6 +4,9 @@
   "Perform a shallow conversion to an Edn data structure."
   (-edn [x]))
 
+(defn edn [x]
+  (-edn x))
+
 (defn class->edn [^Class c]
   (if (.isArray c)
     (.getName c)
@@ -30,7 +33,7 @@
     (let [pending? (and (instance? clojure.lang.IPending x)
                         (not (.isRealized ^clojure.lang.IPending x)))
           [ex val] (when-not pending?
-                     (try [false (deref x)]
+                     (try [false @x]
                           (catch Throwable e
                             [true e])))
           failed? (or ex (and (instance? clojure.lang.Agent x)
