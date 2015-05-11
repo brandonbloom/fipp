@@ -23,7 +23,6 @@
 
   java.lang.Object
   (-edn [x]
-    (throw (Exception. "??"))
     (tagged-object x (str x)))
 
   clojure.lang.IDeref
