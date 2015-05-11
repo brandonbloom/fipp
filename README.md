@@ -21,7 +21,7 @@ Fipp artifacts are [published on Clojars](https://clojars.org/fipp).
 To depend on this version with Lein, add the following to your `project.clj`:
 
 ```clojure
-[fipp "0.6.0"]
+[fipp "0.6.1"]
 ```
 
 This version of Fipp works with Clojure 1.7 or newer.
@@ -29,9 +29,10 @@ This version of Fipp works with Clojure 1.7 or newer.
 See [the v0.5 branch](https://github.com/brandonbloom/fipp/tree/v0.5) for
 a version of Fipp that works with Clojure 1.6.
 
-ClojureScript support is currently considered experimental.
-*NOTE:* It's actually busted in 0.6.0, fixed in (unreleased) 0.6.1-SNAPSHOT.
-I'll deploy a fixed version after the next version of ClojureScript is released.
+ClojureScript is supported from build 3269 and up. There are several known
+issues on both the Fipp and CLJS sides that are in the process of being fixed.
+While I wouldn't yet trust Fipp to serialize CLJS data durably, it should be
+more than usable interactively. Please let me know if it isn't for you.
 
 
 ### Colorization & REPL Integration
