@@ -13,10 +13,6 @@
 (defn pattern? [x]
   (instance? js/RegExp x))
 
-;;XXX contribute to cljs
-(defn tagged-literal [tag rep]
-  [::TAGGED tag rep])
-
 (defn record->tagged [x]
   (tagged-literal (s/split (-> x type pr-str) #"/" 2)
                   (into {} x)))

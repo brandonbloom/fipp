@@ -28,21 +28,7 @@
 
   )
 
-#?(:cljs
-    (do
-
-      (defn var? [x]
-        (instance? cljs.core.Var x)) ;XXX
-
-      ;;TODO contribute to cljs
-      (defn record? [x]
-        (satisfies? cljs.core.IRecord x))
-
-      ;;TODO contribute to cljs
-      (defn tagged-literal? [x]
-        false)
-
-     ))
+#?(:cljs (defn char? [x] false))
 
 (defn visit*
   "Visits objects, ignoring metadata."
@@ -51,8 +37,7 @@
     (nil? x) (visit-nil visitor)
     (i/boolean? x) (visit-boolean visitor x)
     (string? x) (visit-string visitor x)
-    #?@(:clj
-         [(char? x) (visit-character visitor x)])
+    (char? x) (visit-character visitor x)
     (symbol? x) (visit-symbol visitor x)
     (keyword? x) (visit-keyword visitor x)
     (number? x) (visit-number visitor x)

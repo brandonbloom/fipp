@@ -227,10 +227,6 @@
          )))))
 
 
-;XXX CLJS-1239
-#?(:cljs (defn eduction [& xforms]
-           (cljs.core/eduction (apply comp (butlast xforms)) (last xforms))))
-
 (defn pprint-document [document options]
   (let [options (merge {:width 70} options)]
     (->> (serialize document)
