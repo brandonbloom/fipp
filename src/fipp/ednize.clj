@@ -73,11 +73,5 @@
 
   )
 
-(defn boolean? [x]
-  (instance? Boolean x))
-
-(defn pattern? [x]
-  (instance? java.util.regex.Pattern x))
-
 (defn record->tagged [x]
   (tagged-literal (-> x class .getName symbol) (into {} x)))
