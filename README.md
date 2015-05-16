@@ -1,5 +1,7 @@
 # Fast Idiomatic Pretty-Printer
 
+[![Join the chat at https://gitter.im/brandonbloom/fipp](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/brandonbloom/fipp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Fipp is a better pretty printer for Clojure and ClojureScript.
 
 Like clojure.pprint, this pretty printer has a *linear runtime* and uses
