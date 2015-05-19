@@ -130,9 +130,8 @@
                                  (deque/conjr buffers
                                               {:position (+ right width)
                                                :nodes deque/empty})
-                                 (do (assert (vector? buffers) (pr-str (class buffers)))
                                  (update-right buffers update-in [:nodes]
-                                               deque/conjr node)))
+                                               deque/conjr node))
                       res res]
                  (if (and (<= right @pos) (<= (count buffers*) width))
                    ;; Not too far
