@@ -6,7 +6,7 @@ Fipp is a better pretty printer for Clojure and ClojureScript.
 
 Like clojure.pprint, this pretty printer has a *linear runtime* and uses
 *bounded space*. However, unlike clojure.pprint, Fipp's implementation is
-tuned for great performance, observably pure, and has a data-driven API.
+tuned for great performance and has a functional, data-driven API.
 
 The data interface is agnostic to the source language. Printers are included
 for Edn data and Clojure code, but it is easy to create a pretty printer for
