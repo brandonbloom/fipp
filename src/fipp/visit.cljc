@@ -1,6 +1,5 @@
 (ns fipp.visit
-  "Convert to and visit edn structures."
-  (:require [fipp.ednize :as i]))
+  "Convert to and visit edn structures.")
 
 ;;;TODO Stablize public interface
 
