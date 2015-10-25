@@ -1,7 +1,7 @@
 (ns fipp.edn
   "Provides a pretty document serializer and pprint fn for Clojure/EDN forms.
   See fipp.clojure for pretty printing Clojure code."
-  (:require [fipp.ednize :refer [edn]]
+  (:require [fipp.ednize :refer [edn record->tagged]]
             [fipp.visit :refer [visit visit*]]
             [fipp.engine :refer (pprint-document)]))
 
@@ -70,6 +70,8 @@
   (visit-pattern [this x]
     [:text (pr-str x)])
 
+  (visit-record [this x]
+    (visit this (record->tagged x)))
 
   )
 
