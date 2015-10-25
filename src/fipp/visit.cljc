@@ -25,7 +25,7 @@
   (visit-meta [this meta x])
   (visit-var [this x])
   (visit-pattern [this x])
-
+  (visit-record [this x])
   )
 
 ;;TODO: CLJ-1719 and CLJS-1241
@@ -51,7 +51,7 @@
     (number? x) (visit-number visitor x)
     (seq? x) (visit-seq visitor x)
     (vector? x) (visit-vector visitor x)
-    (record? x) (visit-tagged visitor (i/record->tagged x))
+    (record? x) (visit-record visitor x)
     (map? x) (visit-map visitor x)
     (set? x) (visit-set visitor x)
     (tagged-literal? x) (visit-tagged visitor x)
