@@ -111,9 +111,9 @@
            "#foo ^{:x 1} []")))
   (testing "Not quite Edn"
     (is (= (with-out-str (pprint #'inc))
-           "#'clojure.core/inc\n")))
-    (is (= (with-out-str (pprint #"x\?y")
-           "#\"x\\?y\"")))
+           "#'clojure.core/inc\n"))
+    (is (= (with-out-str (pprint #"x\?y"))
+           "#\"x\\?y\"\n")))
   )
 
 (comment
