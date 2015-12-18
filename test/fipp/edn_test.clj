@@ -123,6 +123,19 @@
            "{:a 0, :b 1, :c 2 ...}\n"))
     (is (= (with-out-str (pprint (into (sorted-set) [0 1 2 3]) {:print-length 3}))
            "#{0 1 2 ...}\n")))
+  (testing ":print-level option"
+    (is (= (with-out-str (pprint '(:a (:b (:c (:d)))) {:print-level 3}))
+           "(:a (:b (:c (#))))\n"))
+    (is (= (with-out-str (pprint '(:a (:b (:c (:d) :e) :f) :g) {:print-level 3}))
+           "(:a (:b (:c (#) :e) :f) :g)\n"))
+    (is (= (with-out-str (pprint [:a [:b [:c [:d]]]] {:print-level 3}))
+           "[:a [:b [:c [#]]]]\n"))
+    (is (= (with-out-str (pprint [:a [:b [:c [:d] :e] :f] :g] {:print-level 3}))
+           "[:a [:b [:c [#] :e] :f] :g]\n"))
+    (is (= (with-out-str (pprint (into (sorted-map) {:a {:b {:c {:d nil}}}}) {:print-level 3}))
+           "{:a {:b {:c {#}}}}\n"))
+    (is (= (with-out-str (pprint #{#{#{#{}}}} {:print-level 3}))
+           "#{#{#{#{#}}}}\n")))
   )
 
 (comment

@@ -5,6 +5,11 @@
             [fipp.visit :refer [visit visit*]]
             [fipp.engine :refer (pprint-document)]))
 
+(defn- ->lines [{:keys [print-level] :as printer} xform x]
+  (if (and print-level (neg? print-level))
+    "#"
+    (sequence xform x)))
+
 (defn- ->group [{:keys [print-length] :as printer} left-separator lines right-separator]
   [:group left-separator
           [:align lines]
@@ -17,7 +22,7 @@
     (take print-length)
     identity))
 
-(defrecord EdnPrinter [print-meta symbols print-length]
+(defrecord EdnPrinter [print-meta symbols print-length print-level]
 
   fipp.visit/IVisitor
 
@@ -50,29 +55,41 @@
   (visit-seq [this x]
     (if-let [pretty (symbols (first x))]
       (pretty this x)
-      (let [xform (comp (print-length-xform this)
-                        (map #(visit this %))
-                        (interpose :line))]
-        (->group this "(" (sequence xform x) ")"))))
+      (let [printer (cond-> this
+                      print-level (update :print-level dec))
+            xform (comp (print-length-xform printer)
+                        (map #(visit printer %))
+                        (interpose :line))
+            lines (->lines printer xform x)]
+        (->group printer "(" lines ")"))))
 
   (visit-vector [this x]
-    (let [xform (comp (print-length-xform this)
-                      (map #(visit this %))
-                      (interpose :line))]
-      (->group this "[" (sequence xform x) "]")))
+    (let [printer (cond-> this
+                    print-level (update :print-level dec))
+          xform (comp (print-length-xform printer)
+                      (map #(visit printer %))
+                      (interpose :line))
+          lines (->lines printer xform x)]
+      (->group printer "[" lines "]")))
 
   (visit-map [this x]
-    (let [xform (comp (print-length-xform this)
+    (let [printer (cond-> this
+                    print-level (update :print-level dec))
+          xform (comp (print-length-xform printer)
                       (map (fn [[k v]]
-                             [:span (visit this k) " " (visit this v)]))
-                      (interpose [:span "," :line]))]
-      (->group this "{" (sequence xform x) "}")))
+                             [:span (visit printer k) " " (visit printer v)]))
+                      (interpose [:span "," :line]))
+          lines (->lines printer xform x)]
+      (->group printer "{" lines "}")))
 
   (visit-set [this x]
-    (let [xform (comp (print-length-xform this)
-                      (map #(visit this %))
-                      (interpose :line))]
-      (->group this "#{" (sequence xform x) "}")))
+    (let [printer (cond-> this
+                    print-level (update :print-level dec))
+          xform (comp (print-length-xform printer)
+                      (map #(visit printer %))
+                      (interpose :line))
+          lines (->lines printer xform x)]
+      (->group printer "#{" lines "}")))
 
   (visit-tagged [this {:keys [tag form]}]
     [:group "#" (pr-str tag)
@@ -102,6 +119,7 @@
   ([x] (pprint x {}))
   ([x options]
    (let [printer (map->EdnPrinter (merge {:print-length *print-length*
+                                          :print-level *print-level*
                                           :print-meta *print-meta*
                                           :symbols {}}
                                          options))]
