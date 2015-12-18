@@ -114,6 +114,15 @@
            "#'clojure.core/inc\n"))
     (is (= (with-out-str (pprint #"x\?y"))
            "#\"x\\?y\"\n")))
+  (testing ":print-length option"
+    (is (= (with-out-str (pprint (range 4) {:print-length 3}))
+           "(0 1 2 ...)\n"))
+    (is (= (with-out-str (pprint [0 1 2 3] {:print-length 3}))
+           "[0 1 2 ...]\n"))
+    (is (= (with-out-str (pprint (into (sorted-map) {:a 0 :b 1 :c 2 :d 3}) {:print-length 3}))
+           "{:a 0, :b 1, :c 2 ...}\n"))
+    (is (= (with-out-str (pprint (into (sorted-set) [0 1 2 3]) {:print-length 3}))
+           "#{0 1 2 ...}\n")))
   )
 
 (comment
