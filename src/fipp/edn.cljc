@@ -5,7 +5,20 @@
             [fipp.visit :refer [visit visit*]]
             [fipp.engine :refer (pprint-document)]))
 
-(defrecord EdnPrinter [print-meta symbols]
+(defn pretty-coll [{:keys [print-level print-length] :as printer}
+                   open xs sep close f]
+  (let [printer (cond-> printer print-level (update :print-level dec))
+        xform (comp (if print-length (take print-length) identity)
+                    (map #(f printer %))
+                    (interpose sep))
+        ys (if (pos? (or print-level 1))
+             (sequence xform xs)
+             "#")
+        ellipsis (when (and print-length (<= print-length (count xs)))
+                   [:span sep "..."])]
+    [:group open [:align ys ellipsis] close]))
+
+(defrecord EdnPrinter [symbols print-meta print-length print-level]
 
   fipp.visit/IVisitor
 
@@ -38,18 +51,18 @@
   (visit-seq [this x]
     (if-let [pretty (symbols (first x))]
       (pretty this x)
-      [:group "(" [:align (interpose :line (map #(visit this %) x))] ")"]))
+      (pretty-coll this "(" x :line ")" visit)))
 
   (visit-vector [this x]
-    [:group "[" [:align (interpose :line (map #(visit this %) x))] "]"])
+    (pretty-coll this "[" x :line "]" visit))
 
   (visit-map [this x]
-    (let [kvps (for [[k v] x]
-                 [:span (visit this k) " " (visit this v)])]
-      [:group "{" [:align (interpose [:span "," :line] kvps)]  "}"]))
+    (pretty-coll this "{" x [:span "," :line] "}"
+      (fn [printer [k v]]
+        [:span (visit printer k) " " (visit printer v)])))
 
   (visit-set [this x]
-    [:group "#{" [:align (interpose :line (map #(visit this %) x)) ] "}"])
+    (pretty-coll this "#{" x :line "}" visit))
 
   (visit-tagged [this {:keys [tag form]}]
     [:group "#" (pr-str tag)
@@ -78,8 +91,10 @@
 (defn pprint
   ([x] (pprint x {}))
   ([x options]
-   (let [printer (map->EdnPrinter (merge {:print-meta *print-meta*
-                                          :symbols {}}
-                                         options))]
+   (let [defaults {:symbols {}
+                   :print-length *print-length*
+                   :print-level *print-level*
+                   :print-meta *print-meta*}
+         printer (map->EdnPrinter (merge defaults options))]
      (binding [*print-meta* false]
        (pprint-document (visit printer x) options)))))
