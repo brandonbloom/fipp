@@ -15,8 +15,8 @@
              (sequence xform xs)
              "#")
         ellipsis (when (and print-length (<= print-length (count xs)))
-                   " ...")]
-    [:group open [:align ys] ellipsis close]))
+                   [:span sep "..."])]
+    [:group open [:align ys ellipsis] close]))
 
 (defrecord EdnPrinter [symbols print-meta print-length print-level]
 
