@@ -66,7 +66,9 @@ evaluation pretty prints in color.
 The available options are:
 
 - `:width` defaults to `70`.
-- `:print-meta` defaults to `clojure.core/*print-meta*`.
+- `:print-length` behaves as and defaults to `clojure.core/*print-length*`.
+- `:print-level` behaves as and defaults to `clojure.core/*print-level*`.
+- `:print-meta` behaves as and defaults to `clojure.core/*print-meta*`.
 
 Any other supported/hidden options are subject to change.
 
