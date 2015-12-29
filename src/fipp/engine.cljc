@@ -229,10 +229,9 @@
 (defn pprint-document [document options]
   (let [options (merge {:width 70} options)]
     (->> (serialize document)
-         (eduction
-           annotate-rights
-           (annotate-begins options)
-           (format-nodes options))
+         (sequence (comp annotate-rights
+                         (annotate-begins options)
+                         (format-nodes options)))
          (run! print)))
   (println))
 
