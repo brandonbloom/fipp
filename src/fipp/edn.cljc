@@ -14,7 +14,7 @@
         ys (if (pos? (or print-level 1))
              (sequence xform xs)
              "#")
-        ellipsis (when (and print-length (<= print-length (count xs)))
+        ellipsis (when (and print-length (seq (drop print-length xs)))
                    [:span sep "..."])]
     [:group open [:align ys ellipsis] close]))
 
