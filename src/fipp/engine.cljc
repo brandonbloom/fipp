@@ -5,6 +5,12 @@
             [fipp.deque :as deque]))
 
 
+(defn unchunk [s]
+  (when (seq s)
+    (lazy-seq
+     (cons (first s)
+           (unchunk (next s))))))
+
 ;;; Serialize document into a stream
 
 (defmulti serialize-node first)
@@ -12,7 +18,7 @@
 (defn serialize [doc]
   (cond
     (nil? doc) nil
-    (seq? doc) (mapcat serialize doc)
+    (seq? doc) (mapcat serialize (unchunk doc))
     (string? doc) [{:op :text, :text doc}]
     (keyword? doc) (serialize-node [doc])
     (vector? doc) (serialize-node doc)
