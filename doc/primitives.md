@@ -6,7 +6,7 @@ first-element. Common patterns have shorthand representations.  The behavior
 of and shorthands for each primitive are described below.
 
 See the `serialize` function in `src/fipp/engine.clj` for the full details of
-how input documents are expanded and interpretered.
+how input documents are expanded and interpreted.
 
 See `src/fipp/edn.clj` for example usage.
 
@@ -31,7 +31,7 @@ output, but will eventually be rendered to occupy only one column.
 
 ## [:pass "..."]
 
-Passthrough nodes are printed verbaitm, but *not* measured.
+Passthrough nodes are printed verbatim, but *not* measured.
 
 Use Passthrough nodes for zero-width control sequences, such as ANSI escape
 sequences for colors.
