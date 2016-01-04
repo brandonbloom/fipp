@@ -16,7 +16,7 @@
              "#")
         ellipsis (when (and print-length (seq (drop print-length xs)))
                    [:span sep "..."])]
-    [:group open [:align ys ellipsis] close]))
+    [:group open (cond-> [:align ys] ellipsis (conj ellipsis)) close]))
 
 (defrecord EdnPrinter [symbols print-meta print-length print-level]
 
@@ -88,13 +88,17 @@
 
   )
 
+(defn edn-printer
+  ([] (edn-printer {}))
+  ([options] (let [defaults {:symbols {}
+                             :print-length *print-length*
+                             :print-level *print-level*
+                             :print-meta *print-meta*}]
+               (map->EdnPrinter (merge defaults options)))))
+
 (defn pprint
   ([x] (pprint x {}))
   ([x options]
-   (let [defaults {:symbols {}
-                   :print-length *print-length*
-                   :print-level *print-level*
-                   :print-meta *print-meta*}
-         printer (map->EdnPrinter (merge defaults options))]
+   (let [printer (edn-printer options)]
      (binding [*print-meta* false]
        (pprint-document (visit printer x) options)))))

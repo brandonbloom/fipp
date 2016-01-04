@@ -1,7 +1,8 @@
 (ns fipp.edn-test
   (:use [clojure.test])
   (:require [clojure.string :as str]
-            [fipp.edn :refer [pprint]]))
+            [fipp.edn :refer [edn-printer pprint]]
+            [fipp.visit :refer [visit]]))
 
 (defrecord Person [first-name last-name])
 
@@ -151,6 +152,12 @@
     (is (= (with-out-str (pprint #{#{#{#{}}}} {:print-level 3}))
            "#{#{#{#{#}}}}\n")))
   )
+
+(deftest print-length-ellipsis
+  (is (= (visit (edn-printer) [0 1])
+         '[:group "[" [:align ([:text "0"] :line [:text "1"])] "]"]))
+  (is (= (visit (edn-printer {:print-length 1}) [0 1])
+         '[:group "[" [:align ([:text "0"]) [:span :line "..."]] "]"])))
 
 (comment
 
