@@ -18,6 +18,19 @@
             {:op :text :text "C"}
             {:op :end}
             {:op :end}])))
+  (testing ":nest indent defaults to 2"
+    (is (= [{:op :nest, :offset 2}
+            {:op :text, :text "foo"}
+            {:op :outdent}]
+           (e/serialize [:nest "foo"])
+           (e/serialize [:nest 2 "foo"]))))
+  (testing ":align offset defaults to 0"
+    (is (= [{:op :align, :offset 0}
+            {:op :text, :text "foo"}
+            {:op :outdent}]
+           (e/serialize [:align "foo"])
+           (e/serialize [:align 0 "foo"]))))
+
   ;;TODO test seq expansion
   )
 
