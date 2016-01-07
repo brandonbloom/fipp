@@ -45,10 +45,13 @@
 (defmethod serialize-node :group [[_ & children]]
   (concat [{:op :begin}] (serialize children) [{:op :end}]))
 
-(defmethod serialize-node :nest [[_ offset & children]]
-  (concat [{:op :nest, :offset offset}]
-          (serialize children)
-          [{:op :outdent}]))
+(defmethod serialize-node :nest [[_ & args]]
+  (let [[offset & children] (if (number? (first args))
+                              args
+                              (cons 2 args))]
+    (concat [{:op :nest, :offset offset}]
+            (serialize children)
+            [{:op :outdent}])))
 
 (defmethod serialize-node :align [[_ & args]]
   (let [[offset & children] (if (number? (first args))
