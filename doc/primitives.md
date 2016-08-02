@@ -39,8 +39,8 @@ sequences for colors.
 
 ## [:span children...]
 
-Span nodes concatenate zero or more children nodes. Lazy sequences are
-treated the same as spans, so you can often omit them when concatenating
+Span nodes concatenate zero or more children nodes. Seqs and nil are
+treated as spans, so you can often omit them when concatenating
 document fragments with standard Clojure sequence functions.
 
 
