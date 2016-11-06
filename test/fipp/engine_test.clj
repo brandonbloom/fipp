@@ -11,10 +11,10 @@
     (is (= (e/serialize doc1)
            [{:op :begin}
             {:op :text :text "A"}
-            {:op :line :inline " "}
+            {:op :line :inline " " :terminate ""}
             {:op :begin}
             {:op :text :text "B"}
-            {:op :line :inline " "}
+            {:op :line :inline " " :terminate ""}
             {:op :text :text "C"}
             {:op :end}
             {:op :end}])))
@@ -42,13 +42,13 @@
             ; Generated: TE 1 "A"
             {:op :text :right 1 :text "A"}
             ; Generated: LE 2
-            {:op :line :right 2 :inline " "}
+            {:op :line :right 2 :inline " " :terminate ""}
             ; Generated: GBeg 2
             {:op :begin :right 2}
             ; Generated: TE 3 "B"
             {:op :text :right 3 :text "B"}
             ; Generated: LE 4
-            {:op :line :right 4 :inline " "}
+            {:op :line :right 4 :inline " " :terminate ""}
             ; Generated: TE 5 "C"
             {:op :text :right 5 :text "C"}
             ; Generated: GEnd 5
@@ -67,13 +67,13 @@
          ; Generated: TE 1 "A"
          {:op :text :right 1 :text "A"}
          ; Generated: LE 2
-         {:op :line :right 2 :inline " "}
+         {:op :line :right 2 :inline " " :terminate ""}
          ; Generated: GBeg 5
          {:op :begin :right 5}
          ; Generated: TE 3 "B"
          {:op :text :right 3 :text "B"}
          ; Generated: LE 4
-         {:op :line :right 4 :inline " "}
+         {:op :line :right 4 :inline " " :terminate ""}
          ; Generated: TE 5 "C"
          {:op :text :right 5 :text "C"}
          ; Generated: GEnd 5
@@ -100,19 +100,19 @@
               ; trHPP: read: TE 1 "A"
               [:in {:op :text :right 1 :text "A"}]
               ; trHPP: read: LE 2
-              [:in {:op :line :right 2 :inline " "}]
+              [:in {:op :line :right 2 :inline " " :terminate ""}]
               ; trHPP: read: GBeg 2
               [:in {:op :begin :right 2}]
               ; trHPP: read: TE 3 "B"
               [:in {:op :text :right 3 :text "B"}]
               ; trHPP: read: LE 4
-              [:in {:op :line :right 4 :inline " "}]
+              [:in {:op :line :right 4 :inline " " :terminate ""}]
               ; Generated: GBeg TooFar
               [:out {:op :begin :right :too-far}]
               ; Generated: TE 1 "A"
               [:out {:op :text :right 1 :text "A"}]
               ; Generated: LE 2
-              [:out {:op :line :right 2 :inline " "}]
+              [:out {:op :line :right 2 :inline " " :terminate ""}]
               ; trHPP: read: TE 5 "C"
               [:in {:op :text :right 5 :text "C"}]
               ; trHPP: read: GEnd 5
@@ -122,7 +122,7 @@
               ; Generated: TE 3 "B"
               [:out {:op :text :right 3 :text "B"}]
               ; Generated: LE 4
-              [:out {:op :line :right 4 :inline " "}]
+              [:out {:op :line :right 4 :inline " " :terminate ""}]
               ; Generated: TE 5 "C"
               [:out {:op :text :right 5 :text "C"}]
               ; Generated: GEnd 5
@@ -155,3 +155,9 @@
            (str (apply str (repeat 5 "&#97;\n")) "\n")))
     (is (= (ppstr [:group (repeat 5 [:span [:escaped "&#97;"] :line])] 10)
            (str (apply str (repeat 5 "&#97; ")) "\n")))))
+
+(deftest terminate-test
+  (is (= (ppstr [:group "a" [:line "-" ";"] "b"] 1000)
+         "a-b\n"))
+  (is (= (ppstr [:group "a" [:line "-" ";"] "b"] 2)
+         "a;\nb\n")))

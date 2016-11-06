@@ -44,14 +44,14 @@ treated as spans, so you can often omit them when concatenating
 document fragments with standard Clojure sequence functions.
 
 
-## [:line "inline"]
+## [:line "inline" "terminate"]
 
-Line nodes print as either a line break or their inline string value. See
-`:group` nodes for how to determine which.
+Line nodes print as either a line terminator and break, or the inline string
+value. See `:group` nodes for how to determine which.
 
-The inline argument is optional. If omitted, a single space will be used.
+The inline and terminate arguments are optional.
 
-A `:line` keyword by itself is shorthand for `[:line " "]`.
+A `:line` keyword by itself is shorthand for the defaults: `[:line " " ""]`.
 
 
 ## [:group children...]

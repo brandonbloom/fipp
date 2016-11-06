@@ -34,10 +34,12 @@
 (defmethod serialize-node :span [[_ & children]]
   (serialize children))
 
-(defmethod serialize-node :line [[_ inline]]
-  (let [inline (or inline " ")]
+(defmethod serialize-node :line [[_ inline terminate]]
+  (let [inline (or inline " ")
+        terminate (or terminate "")]
     (assert (string? inline))
-    [{:op :line, :inline inline}]))
+    (assert (string? terminate))
+    [{:op :line, :inline inline, :terminate terminate}]))
 
 (defmethod serialize-node :break [& _]
   [{:op :break}])
@@ -197,7 +199,7 @@
                  (do
                    (vreset! length (- (+ right width) indent))
                    (vreset! column 0)
-                   (rf res "\n"))
+                   (rf res (str (:terminate node) "\n")))
                  (let [inline (:inline node)]
                    (vswap! column + (count inline))
                    (rf res inline)))
