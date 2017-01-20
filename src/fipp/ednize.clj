@@ -4,6 +4,12 @@
   "Perform a shallow conversion to an Edn data structure."
   (-edn [x]))
 
+(defprotocol IOverride
+  "Mark object as preferring its custom IEdn behavior.")
+
+(defn override? [x]
+  (satisfies? IOverride x))
+
 (defn edn [x]
   (-edn x))
 

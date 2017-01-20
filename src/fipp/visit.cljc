@@ -1,7 +1,8 @@
 (ns fipp.visit
   "Convert to and visit edn structures."
   #?(:clj  (:refer-clojure :exclude [boolean?])
-     :cljs (:refer-clojure :exclude [boolean? char?])))
+     :cljs (:refer-clojure :exclude [boolean? char?]))
+  (:require [fipp.ednize :refer [override?]]))
 
 ;;;TODO Stablize public interface
 
@@ -44,6 +45,7 @@
   [visitor x]
   (cond
     (nil? x) (visit-nil visitor)
+    (override? x) (visit-unknown visitor x)
     (boolean? x) (visit-boolean visitor x)
     (string? x) (visit-string visitor x)
     (char? x) (visit-character visitor x)

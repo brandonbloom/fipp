@@ -5,11 +5,20 @@
   "Perform a shallow conversion to an Edn data structure."
   (-edn [x]))
 
+(defprotocol IOverride
+  "Mark object as preferring its custom IEdn behavior.")
+
+(defn override? [x]
+  (satisfies? IEdn x))
+
 ;;TODO Automated test cases for all of these!
 ;;XXX Usages of type/pr-str seem wrong...
 
 (defn edn [x]
   (cond
+
+    (override? x)
+    (-edn x)
 
     (object? x)
     (tagged-literal 'js

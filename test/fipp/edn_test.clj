@@ -1,7 +1,8 @@
 (ns fipp.edn-test
   (:use [clojure.test])
   (:require [clojure.string :as str]
-            [fipp.edn :refer [pprint]]))
+            [fipp.edn :refer [pprint]]
+            [fipp.ednize :refer [IEdn IOverride]]))
 
 (defrecord Person [first-name last-name])
 
@@ -151,6 +152,15 @@
     (is (= (with-out-str (pprint #{#{#{#{}}}} {:print-level 3}))
            "#{#{#{#{#}}}}\n")))
   )
+
+(deftype SomeType []
+  clojure.lang.IPersistentMap
+  IEdn
+  (-edn [_] :override)
+  IOverride)
+
+(deftest override-test
+  (is (= (with-out-str (pprint (SomeType.))) ":override\n")))
 
 (comment
 
