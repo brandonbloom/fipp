@@ -40,6 +40,11 @@
    :clj (defn regexp? [x]
           (instance? java.util.regex.Pattern x)))
 
+(defn eduction? [x]
+  (instance? #?(:clj  clojure.core.Eduction
+                :cljs Eduction)
+    x))
+
 (defn visit*
   "Visits objects, ignoring metadata."
   [visitor x]
@@ -60,6 +65,7 @@
     (tagged-literal? x) (visit-tagged visitor x)
     (var? x) (visit-var visitor x)
     (regexp? x) (visit-pattern visitor x)
+    (eduction? x) (recur visitor (sequence x))
     :else (visit-unknown visitor x)))
 
 (defn visit [visitor x]
