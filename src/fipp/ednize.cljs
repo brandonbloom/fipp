@@ -83,5 +83,5 @@
   )
 
 (defn record->tagged [x]
-  (tagged-literal (s/split (-> x type pr-str) #"/" 2)
+  (tagged-literal (apply symbol (s/split (-> x type pr-str) #"/" 2))
                   (into {} x)))

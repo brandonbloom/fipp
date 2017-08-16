@@ -1,15 +1,19 @@
 (ns fipp.edn-test
-  (:use [clojure.test])
+  #?(:clj (:use [clojure.test])
+     :cljs (:require-macros [cljs.test :refer [deftest is are testing]]))
   (:require [clojure.string :as str]
             [fipp.edn :refer [pprint]]
             [fipp.ednize :refer [IEdn IOverride]]))
 
 (defrecord Person [first-name last-name])
 
-
 (defn clean [s]
   (-> s
     str/trim
+    (str/replace "cljs.core/" "clojure.core.")
+    ;; Force CLJS to JVM's class name behavior.
+    (str/replace "fipp.edn-test/" "fipp.edn_test.")
+    ;; Use dummy addresses and gensyms.
     (str/replace #"\"0x[a-f0-9]+\"" "\"0xDEADBEEF\"")
     (str/replace #"reify__[0-9]+" "reify__123")))
 
@@ -28,9 +32,14 @@
 
   (tagged-literal 'x 5)
 
+  ;;XXX CLJS doesn't report addresses, so these tests fail.
   (atom (range 20))
 
-  (future 1)
+  ;; CLJS doesn't have futures, so dummy one up.
+  #?(:clj (future 1)
+     :cljs (tagged-literal 'object ['clojure.core$future_call$reify__6730
+                                    "0x31e033f0"
+                                    {:status :ready, :val 1}]))
 
   #{:foo :bar :baz}
 
