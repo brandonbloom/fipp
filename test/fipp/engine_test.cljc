@@ -1,5 +1,6 @@
 (ns fipp.engine-test
-  (:use [clojure.test])
+  #?(:clj (:use [clojure.test])
+     :cljs (:require-macros [cljs.test :refer [deftest is are testing]]))
   (:require [fipp.engine :as e]))
 
 ;; Tests for doc1 converted from the Haskell in the literature.
