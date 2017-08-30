@@ -1,7 +1,6 @@
 (ns fipp.edn-test
-  #?(:clj (:use [clojure.test])
-     :cljs (:require-macros [cljs.test :refer [deftest is are testing]]))
-  (:require [clojure.string :as str]
+  (:require [clojure.test :refer [deftest is are testing]]
+            [clojure.string :as str]
             [fipp.edn :refer [pprint]]
             [fipp.ednize :refer [IEdn IOverride]]))
 
@@ -162,8 +161,10 @@
            "#{#{#{#{#}}}}\n")))
   )
 
+;;XXX Is IOverride working correctly for CLJS?
 (deftype SomeType []
-  clojure.lang.IPersistentMap
+  #?(:clj clojure.lang.IPersistentMap
+     :cljs cljs.core/IMap)
   IEdn
   (-edn [_] :override)
   IOverride)

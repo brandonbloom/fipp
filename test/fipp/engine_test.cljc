@@ -1,7 +1,6 @@
 (ns fipp.engine-test
-  #?(:clj (:use [clojure.test])
-     :cljs (:require-macros [cljs.test :refer [deftest is are testing]]))
-  (:require [fipp.engine :as e]))
+  (:require [clojure.test :refer [deftest is are testing]]
+            [fipp.engine :as e]))
 
 ;; Tests for doc1 converted from the Haskell in the literature.
 ;; Group (Text "A" :+: (Line :+: Group (Text "B" :+: (Line :+: Text "C"))))

@@ -1,7 +1,6 @@
 (ns fipp.clojure-test
-  #?(:clj (:use [clojure.test])
-     :cljs (:require-macros [cljs.test :refer [deftest is are testing]]))
-  (:require [clojure.string :as str]
+  (:require [clojure.test :refer [deftest is are testing]]
+            [clojure.string :as str]
             [fipp.clojure :refer [pprint]]))
 
 (deftest symbols-test

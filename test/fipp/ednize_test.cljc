@@ -1,7 +1,6 @@
 (ns fipp.ednize-test
-  #?(:clj (:use [clojure.test])
-     :cljs (:require-macros [cljs.test :refer [deftest is are testing]]))
-  (:require [fipp.ednize :refer [edn]]))
+  (:require [clojure.test :refer [deftest is are testing]]
+            [fipp.ednize :refer [edn]]))
 
 (deftest jvm-to-edn-test
   (testing "Conversion to tagged literals"
