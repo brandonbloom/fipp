@@ -62,7 +62,12 @@
     (regexp? x) (visit-pattern visitor x)
     :else (visit-unknown visitor x)))
 
+(defn value-meta [x]
+  (when #?(:clj (instance? clojure.lang.IObj x)
+           :cljs (satisfies? IWithMeta x))
+    (meta x)))
+
 (defn visit [visitor x]
-  (if-let [m (meta x)]
+  (if-let [m (value-meta x)]
     (visit-meta visitor m x)
     (visit* visitor x)))
