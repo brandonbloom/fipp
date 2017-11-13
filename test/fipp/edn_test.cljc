@@ -1,20 +1,10 @@
 (ns fipp.edn-test
   (:require [clojure.test :refer [deftest is are testing]]
-            [clojure.string :as str]
+            [fipp.test-util :refer [clean]]
             [fipp.edn :refer [pprint]]
             [fipp.ednize :refer [IEdn IOverride]]))
 
 (defrecord Person [first-name last-name])
-
-(defn clean [s]
-  (-> s
-    str/trim
-    (str/replace "cljs.core/" "clojure.core.")
-    ;; Force CLJS to JVM's class name behavior.
-    (str/replace "fipp.edn-test/" "fipp.edn_test.")
-    ;; Use dummy addresses and gensyms.
-    (str/replace #"\"0x[a-f0-9]+\"" "\"0xDEADBEEF\"")
-    (str/replace #"reify__[0-9]+" "reify__123")))
 
 (def data [
 

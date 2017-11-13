@@ -1,8 +1,7 @@
 (ns fipp.visit
   "Convert to and visit edn structures."
-  #?(:clj  (:refer-clojure :exclude [boolean?])
-     :cljs (:refer-clojure :exclude [boolean? char?]))
-  (:require [fipp.ednize :refer [override?]]))
+  (:require [fipp.util :as util]
+            [fipp.ednize :refer [override?]]))
 
 ;;;TODO Stablize public interface
 
@@ -30,25 +29,15 @@
   (visit-record [this x])
   )
 
-;;TODO: CLJ-1719 and CLJS-1241
-(defn boolean? [x]
-  (or (true? x) (false? x)))
-
-#?(:cljs (defn char? [x]
-           false)
-   ;;TODO: CLJ-1720 and CLJS-1242
-   :clj (defn regexp? [x]
-          (instance? java.util.regex.Pattern x)))
-
 (defn visit*
   "Visits objects, ignoring metadata."
   [visitor x]
   (cond
     (nil? x) (visit-nil visitor)
     (override? x) (visit-unknown visitor x)
-    (boolean? x) (visit-boolean visitor x)
+    (util/boolean? x) (visit-boolean visitor x)
     (string? x) (visit-string visitor x)
-    (char? x) (visit-character visitor x)
+    (util/char? x) (visit-character visitor x)
     (symbol? x) (visit-symbol visitor x)
     (keyword? x) (visit-keyword visitor x)
     (number? x) (visit-number visitor x)
@@ -59,12 +48,11 @@
     (set? x) (visit-set visitor x)
     (tagged-literal? x) (visit-tagged visitor x)
     (var? x) (visit-var visitor x)
-    (regexp? x) (visit-pattern visitor x)
+    (util/regexp? x) (visit-pattern visitor x)
     :else (visit-unknown visitor x)))
 
 (defn value-meta [x]
-  (when #?(:clj (instance? clojure.lang.IObj x)
-           :cljs (satisfies? IWithMeta x))
+  (when (util/value-obj? x)
     (meta x)))
 
 (defn visit [visitor x]

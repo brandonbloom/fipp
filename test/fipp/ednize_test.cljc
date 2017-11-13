@@ -2,7 +2,13 @@
   (:require [clojure.test :refer [deftest is are testing]]
             [fipp.ednize :refer [edn]]))
 
-(deftest jvm-to-edn-test
+(defrecord R [])
+
+(def unique
+  #?(:clj (Object.)
+     :cljs (js-obj)))
+
+(deftest ednize-test
   (testing "Conversion to tagged literals"
     (are [obj tag rep] (= (edn obj) (tagged-literal tag rep))
 
@@ -19,6 +25,20 @@
 
         clojure.lang.PersistentQueue/EMPTY
         'clojure.lang.PersistentQueue []
-      ])
 
-    )))
+      ])
+    ))
+
+  (testing "No-op for stuff that is already shallow edn."
+    (are [obj] (= (edn obj) obj)
+      nil true "x" 'x \x 1 () [] (R.) #{}))
+
+  (testing "Shallow"
+    (are [obj] (= (edn obj) obj)
+      [unique]
+      {unique unique}
+      #{unique}
+      (list unique)
+      ))
+
+  )

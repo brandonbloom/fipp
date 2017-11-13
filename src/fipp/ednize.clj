@@ -1,4 +1,5 @@
-(ns fipp.ednize)
+(ns fipp.ednize
+  (:require [fipp.util :refer [edn?]]))
 
 (defprotocol IEdn
   "Perform a shallow conversion to an Edn data structure."
@@ -30,9 +31,15 @@
 
 (extend-protocol IEdn
 
+  nil
+  (-edn [x]
+    nil)
+
   java.lang.Object
   (-edn [x]
-    (tagged-object x (str x)))
+    (if (edn? x)
+      x
+      (tagged-object x (str x))))
 
   clojure.lang.IDeref
   (-edn [x]

@@ -1,5 +1,6 @@
 (ns fipp.ednize
-  (:require [clojure.string :as s]))
+  (:require [clojure.string :as s]
+            [fipp.util :refer [edn?]]))
 
 (defprotocol IEdn
   "Perform a shallow conversion to an Edn data structure."
@@ -59,6 +60,9 @@
 
     (satisfies? IEdn x)
     (-edn x)
+
+    (edn? x)
+    x
 
     :else
     ;;TODO Something better.
