@@ -1,7 +1,8 @@
 (ns fipp.edn
   "Provides a pretty document serializer and pprint fn for Clojure/EDN forms.
   See fipp.clojure for pretty printing Clojure code."
-  (:require [fipp.ednize :refer [edn record->tagged]]
+  (:require [clojure.string :as str]
+            [fipp.ednize :refer [edn record->tagged]]
             [fipp.visit :refer [visit visit*]]
             [fipp.engine :refer (pprint-document)]))
 
@@ -88,8 +89,8 @@
 
   )
 
-(defn pprint
-  ([x] (pprint x {}))
+(defn pretty
+  ([x] (pretty x {}))
   ([x options]
    (let [defaults {:symbols {}
                    :print-length *print-length*
@@ -97,4 +98,24 @@
                    :print-meta *print-meta*}
          printer (map->EdnPrinter (merge defaults options))]
      (binding [*print-meta* false]
-       (pprint-document (visit printer x) options)))))
+       (visit printer x)))))
+
+(defn pprint
+  ([x] (pprint x {}))
+  ([x options]
+   (-> (pretty x options)
+       (pprint-document options))))
+
+(defmacro dbg [x]
+  (let [{:keys [line]} (meta &form)
+        source (str/join ":" (filter some? [*file* line]))]
+    `(let [y# ~x]
+       (binding [*out* *err*]
+         (pprint-document
+           [:group [:group ~(when (seq source)
+                              [:span source :line])
+                           '~(pretty x)
+                           :line "=>"]
+            :line (pretty y#)]
+           {}))
+       y#)))

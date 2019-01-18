@@ -23,7 +23,7 @@ Fipp artifacts are [published on Clojars](https://clojars.org/fipp).
 To depend on this version with Lein, add the following to your `project.clj`:
 
 ```clojure
-[fipp "0.6.14"]
+[fipp "0.6.15"]
 ```
 
 This version of Fipp works with Clojure 1.7 or newer.
@@ -49,7 +49,7 @@ evaluation pretty prints in color.
 
 ```clojure
 ;; Refer with a rename to avoid collision with your REPL's pprint.
-(require '[fipp.edn :refer (pprint) :rename {pprint fipp}])
+(require '[fipp.edn :refer [pprint] :rename {pprint fipp}])
 
 (fipp [1 2 3])
 (fipp (range 50))
@@ -71,6 +71,54 @@ The available options are:
 - `:print-meta` behaves as and defaults to `clojure.core/*print-meta*`.
 
 Any other supported/hidden options are subject to change.
+
+### Conveniences
+
+The `dbg` macro can be used for convenient "printf debugging" of
+source file, line, expression, and evaluation result to `*err*`.
+
+```clojure
+(require '[fipp.edn :refer [dbg]])
+(dbg (repeat 5 (range 10)))
+```
+
+This will print:
+
+```
+/path/to/that/file.clj:2
+(repeat 5 (range 10))
+=>
+((0 1 2 3 4 5 6 7 8 9)
+ (0 1 2 3 4 5 6 7 8 9)
+ (0 1 2 3 4 5 6 7 8 9)
+ (0 1 2 3 4 5 6 7 8 9)
+ (0 1 2 3 4 5 6 7 8 9))
+```
+
+A Fipp-enabled version of `clojure.repl/pst` is also available:
+
+```
+user=> (require '[fipp.repl :refer [pst]])
+user=> (throw (ex-info "whoops" {:xs (range 20) :ys (range 20)}))
+
+ExceptionInfo whoops  clojure.core/ex-info (core.clj:4617)
+user=> (fipp.repl/pst)
+ExceptionInfo whoops
+{:xs (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19),
+ :ys (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)}
+      clojure.core/ex-info (core.clj:4617)
+      clojure.core/ex-info (core.clj:4617)
+      user/eval3185 (form-init1248204588518004004.clj:1)
+      user/eval3185 (form-init1248204588518004004.clj:1)
+      clojure.lang.Compiler.eval (Compiler.java:6927)
+      clojure.lang.Compiler.eval (Compiler.java:6890)
+      clojure.core/eval (core.clj:3105)
+      clojure.core/eval (core.clj:3101)
+      clojure.main/repl/read-eval-print--7408/fn--7411 (main.clj:240)
+      clojure.main/repl/read-eval-print--7408 (main.clj:240)
+      clojure.main/repl/fn--7417 (main.clj:258)
+      clojure.main/repl (main.clj:258)
+```
 
 
 ## Fast!
