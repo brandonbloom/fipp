@@ -1,6 +1,7 @@
 (ns fipp.engine-test
   (:require [clojure.test :refer [deftest is are testing]]
-            [fipp.engine :as e]))
+            [fipp.engine :as e])
+  #?(:clj (:import (java.io StringWriter))))
 
 ;; Tests for doc1 converted from the Haskell in the literature.
 ;; Group (Text "A" :+: (Line :+: Group (Text "B" :+: (Line :+: Text "C"))))
@@ -161,3 +162,35 @@
          "a-b\n"))
   (is (= (ppstr [:group "a" [:line "-" ";"] "b"] 2)
          "a;\nb\n")))
+
+#?(:clj (deftest writer-test
+          (testing ":writer option works"
+            (let [sw (StringWriter.)]
+              (e/pprint-document doc1 {:writer sw})
+              (is (= "A B C\n" (str sw)))))
+
+          (testing ":writer option does not interfere with *out*"
+            (let [sw1 (StringWriter.)
+                  sw2 (StringWriter.)]
+              (binding [*out* sw1]
+                (e/pprint-document doc1 {:writer sw2}))
+              (is (= "" (str sw1)))
+              (is (= "A B C\n" (str sw2))))
+
+            (let [doc (->> (repeatedly (fn []
+                                         (print "foo")
+                                         "bar"))
+                           (take 3))
+                  sw1 (StringWriter.)
+                  sw2 (StringWriter.)]
+              (binding [*out* sw1]
+                (e/pprint-document doc {:writer sw2}))
+              (is (= "foofoofoo" (str sw1)))
+              (is (= "barbarbar\n" (str sw2)))))))
+
+(deftest print-dup-test
+  (testing "Not affected by *print-dup* binding"
+    (is (= "A B C\n"
+           (with-out-str
+             (binding [*print-dup* true]
+               (e/pprint-document doc1)))))))

@@ -2,7 +2,8 @@
   "See: Oleg Kiselyov, Simon Peyton-Jones, and Amr Sabry
   Lazy v. Yield: Incremental, Linear Pretty-printing"
   (:require [clojure.string :as s]
-            [fipp.deque :as deque]))
+            [fipp.deque :as deque])
+  #?(:clj (:import (java.io Writer))))
 
 
 ;;; Serialize document into a stream
@@ -231,18 +232,30 @@
          )))))
 
 
+(defn print-fns
+  [options]
+  #?(:clj (let [{:keys [^Writer writer] :or {writer *out*}} options]
+            {:print #(.write writer ^String %)
+             :println (fn []
+                        (binding [*out* writer]
+                          (println)))})
+     :cljs {:print print
+            :println println}))
+
+
 (defn pprint-document
   ([document]
    (pprint-document document))
   ([document options]
-   (let [options (merge {:width 70} options)]
+   (let [options (merge {:width 70} options)
+         {:keys [print println]} (print-fns options)]
      (->> (serialize document)
           (eduction
             annotate-rights
             (annotate-begins options)
             (format-nodes options))
-          (run! print)))
-   (println)))
+          (run! print))
+     (println))))
 
 
 (comment
