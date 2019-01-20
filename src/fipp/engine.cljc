@@ -239,8 +239,11 @@
              :println (fn []
                         (binding [*out* writer]
                           (println)))})
-     :cljs {:print print
-            :println println}))
+     :cljs (let [{:keys [print-fn] :or {print-fn *print-fn*}} options]
+             {:print print-fn
+              :println (fn []
+                         (binding [*print-fn* print-fn]
+                           (println)))})))
 
 
 (defn pprint-document

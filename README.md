@@ -67,6 +67,7 @@ The available options are:
 
 - `:width` defaults to `70`.
 - `:writer` defaults to `clojure.core/*out*` (Clojure only).
+- `:print-fn` defaults to `cljs.core/*print-fn*` (ClojureScript only).
 - `:print-length` behaves as and defaults to `clojure.core/*print-length*`.
 - `:print-level` behaves as and defaults to `clojure.core/*print-level*`.
 - `:print-meta` behaves as and defaults to `clojure.core/*print-meta*`.

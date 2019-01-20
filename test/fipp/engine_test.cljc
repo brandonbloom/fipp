@@ -194,3 +194,28 @@
            (with-out-str
              (binding [*print-dup* true]
                (e/pprint-document doc1)))))))
+
+#?(:cljs (deftest print-fn-test
+           (testing ":print-fn option works"
+             (let [res (volatile! "")]
+               (e/pprint-document doc1 {:print-fn #(vswap! res str %)})
+               (is (= "A B C" @res))))
+
+           (testing ":print-fn option does not interfere with *print-fn*"
+             (let [res1 (volatile! "")
+                   res2 (volatile! "")]
+               (binding [*print-fn* #(vswap! res1 str %)]
+                 (e/pprint-document doc1 {:print-fn #(vswap! res2 str %)}))
+               (is (= "" @res1))
+               (is (= "A B C" @res2)))
+
+             (let [doc (->> (repeatedly (fn []
+                                          (print "foo")
+                                          "bar"))
+                            (take 3))
+                   res1 (volatile! "")
+                   res2 (volatile! "")]
+               (binding [*print-fn* #(vswap! res1 str %)]
+                 (e/pprint-document doc {:print-fn #(vswap! res2 str %)}))
+               (is (= "foofoofoo" @res1))
+               (is (= "barbarbar" @res2))))))
