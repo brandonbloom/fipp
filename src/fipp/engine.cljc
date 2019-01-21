@@ -248,7 +248,7 @@
 
 (defn pprint-document
   ([document]
-   (pprint-document document))
+   (pprint-document document {}))
   ([document options]
    (let [options (merge {:width 70} options)
          {:keys [print println]} (print-fns options)]
