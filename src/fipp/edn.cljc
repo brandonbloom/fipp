@@ -66,7 +66,7 @@
     (pretty-coll this "#{" x :line "}" visit))
 
   (visit-tagged [this {:keys [tag form]}]
-    [:group "#" (pr-str tag)
+    [:group "#" (str tag)
             (when (or (and print-meta (meta form))
                       (not (coll? form)))
               " ")
