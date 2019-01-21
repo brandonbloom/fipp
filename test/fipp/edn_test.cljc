@@ -118,6 +118,16 @@
                                    (pprint [(Integer. 1) (Long. 2)])))
                    (with-out-str (pprint [(Integer. 1) (Long. 2)]))
                    "[1 2]\n"))))
+  (testing "Not affected by *print-readably* binding"
+    (is (= (with-out-str (binding [*print-readably* false]
+                           (pprint ["abc"])))
+           (with-out-str (pprint ["abc"]))
+           "[\"abc\"]\n"))
+    (is (= (with-out-str (binding [*print-readably* false]
+                           (pprint [\d \e])))
+           (with-out-str (pprint [\d \e]))
+           #?(:clj "[\\d \\e]\n"
+              :cljs "[\"d\" \"e\"]\n"))))
   (testing ":print-length option"
     (is (= (with-out-str (pprint (range) {:print-length 3}))
            "(0 1 2 ...)\n"))

@@ -35,10 +35,12 @@
     [:text (str x)])
 
   (visit-string [this x]
-    [:text (pr-str x)])
+    [:text (binding [*print-readably* true]
+             (pr-str x))])
 
   (visit-character [this x]
-    [:text (pr-str x)])
+    [:text (binding [*print-readably* true]
+             (pr-str x))])
 
   (visit-symbol [this x]
     [:text (str x)])
