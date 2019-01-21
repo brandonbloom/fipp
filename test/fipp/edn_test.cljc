@@ -113,6 +113,11 @@
            "#'clojure.core/inc\n"))
     (is (= (with-out-str (pprint #"x\?y"))
            "#\"x\\?y\"\n")))
+  #?(:clj (testing "Not affected by *print-dup* binding"
+            (is (= (with-out-str (binding [*print-dup* true]
+                                   (pprint [(Integer. 1) (Long. 2)])))
+                   (with-out-str (pprint [(Integer. 1) (Long. 2)]))
+                   "[1 2]\n"))))
   (testing ":print-length option"
     (is (= (with-out-str (pprint (range) {:print-length 3}))
            "(0 1 2 ...)\n"))

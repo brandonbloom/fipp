@@ -47,7 +47,7 @@
     [:text (str x)])
 
   (visit-number [this x]
-    [:text (pr-str x)])
+    [:text (str x)])
 
   (visit-seq [this x]
     (if-let [pretty (symbols (first x))]
