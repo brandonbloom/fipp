@@ -106,16 +106,17 @@
    (-> (pretty x options)
        (pprint-document options))))
 
-(defmacro dbg [x]
-  (let [{:keys [line]} (meta &form)
-        source (str/join ":" (filter some? [*file* line]))]
-    `(let [y# ~x]
-       (binding [*out* *err*]
-         (pprint-document
-           [:group [:group ~(when (seq source)
-                              [:span source :line])
-                           '~(pretty x)
-                           :line "=>"]
-            :line (pretty y#)]
-           {}))
-       y#)))
+#?(:clj
+   (defmacro dbg [x]
+     (let [{:keys [line]} (meta &form)
+           source (str/join ":" (filter some? [*file* line]))]
+       `(let [y# ~x]
+          (binding [*out* *err*]
+            (pprint-document
+              [:group [:group ~(when (seq source)
+                                 [:span source :line])
+                       '~(pretty x)
+                       :line "=>"]
+               :line (pretty y#)]
+              {}))
+          y#))))
