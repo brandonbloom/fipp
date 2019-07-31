@@ -41,7 +41,7 @@ more than usable interactively. Please let me know if it isn't for you.
 
 [Puget][2] uses Fipp's engine to provide an alternative, colorizing printer.
 
-[Whidbey][3] integrates Puget in to nREPL via Leinigen, so that every
+[Whidbey][3] integrates Puget in to nREPL via Leiningen, so that every
 evaluation pretty prints in color.
 
 
