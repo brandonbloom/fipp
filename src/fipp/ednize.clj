@@ -1,5 +1,6 @@
 (ns fipp.ednize
-  (:require [fipp.util :refer [edn?]]))
+  (:require [clojure.instant]
+            [fipp.util :refer [edn?]]))
 
 (defprotocol IEdn
   "Perform a shallow conversion to an Edn data structure."
