@@ -66,17 +66,7 @@
   ;TODO reader-conditional
   ;TODO Eduction ??
 
-  java.util.Date
-  (-edn [x]
-    (let [s (format-hack #'clojure.instant/thread-local-utc-date-format x)]
-      (tagged-literal 'inst s)))
-
   ;TODO (defmethod print-method java.util.Calendar
-
-  java.sql.Timestamp
-  (-edn [x]
-    (let [s (format-hack #'clojure.instant/thread-local-utc-timestamp-format x)]
-      (tagged-literal 'inst s)))
 
   java.util.UUID
   (-edn [x]
@@ -87,6 +77,19 @@
     (tagged-literal 'clojure.lang.PersistentQueue (vec x)))
 
   )
+
+
+(when (find-ns 'clojure.instant)
+  (extend-protocol IEdn
+    java.util.Date
+    (-edn [x]
+      (let [s (format-hack (eval '(var clojure.instant/thread-local-utc-date-format)) x)]
+        (tagged-literal 'inst s)))
+
+    java.sql.Timestamp
+    (-edn [x]
+      (let [s (format-hack (eval '(var clojure.instant/thread-local-utc-timestamp-format)) x)]
+        (tagged-literal 'inst s)))))
 
 (defn record->tagged [x]
   (tagged-literal (-> x class .getName symbol) (into {} x)))
