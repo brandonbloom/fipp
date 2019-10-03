@@ -35,10 +35,12 @@
     [:text (str x)])
 
   (visit-string [this x]
-    [:text (pr-str x)])
+    [:text (binding [*print-readably* true]
+             (pr-str x))])
 
   (visit-character [this x]
-    [:text (pr-str x)])
+    [:text (binding [*print-readably* true]
+             (pr-str x))])
 
   (visit-symbol [this x]
     [:text (str x)])
@@ -47,7 +49,7 @@
     [:text (str x)])
 
   (visit-number [this x]
-    [:text (pr-str x)])
+    [:text (str x)])
 
   (visit-seq [this x]
     (if-let [pretty (symbols (first x))]
@@ -66,7 +68,7 @@
     (pretty-coll this "#{" x :line "}" visit))
 
   (visit-tagged [this {:keys [tag form]}]
-    [:group "#" (pr-str tag)
+    [:group "#" (str tag)
             (when (or (and print-meta (meta form))
                       (not (coll? form)))
               " ")

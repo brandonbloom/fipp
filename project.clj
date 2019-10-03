@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/core.rrb-vector "0.1.0"]]
   :profiles {:dev {:dependencies [[criterium "0.4.3"]
-                                  [org.clojure/clojurescript "1.9.854"]]}}
+                                  [org.clojure/clojurescript "1.9.854"]
+                                  [javax.xml.bind/jaxb-api "2.3.1"]]}}
   :deploy-repositories [["releases" {:url "https://clojars.org/repo"
                                      :sign-releases false}]])
