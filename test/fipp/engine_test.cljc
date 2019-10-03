@@ -157,6 +157,57 @@
     (is (= (ppstr [:group (repeat 5 [:span [:escaped "&#97;"] :line])] 10)
            (str (apply str (repeat 5 "&#97; ")) "\n")))))
 
+(deftest passthrough-node-test
+  ;; reminder to reader: :pass nodes are to be used with non-visible characters such as ANSI escape codes
+  (testing "indentation without :pass (as baseline for comparison with subsequent tests)"
+    (is (= (ppstr [:group
+                   "AA"
+                   [:align
+                    :line
+                    "BB"
+                    :line
+                    "CC"
+                    [:align
+                     :line
+                     "DD"]]] 6)
+           (str "AA\n"
+                "  BB\n"
+                "  CC\n"
+                "    DD\n"))))
+  (testing ":pass nodes have a width of zero and respect indentation"
+    (is (= (ppstr [:group
+                   [:span [:pass "<"] "AA" [:pass ">"]]
+                   [:align
+                    :line
+                    [:span [:pass "<"] "BB" [:pass ">>"]]
+                    :line
+                    [:span [:pass "<<<<<<<<<<"] "CC" [:pass ">>>"]]
+                    [:align
+                     :line
+                     [:span [:pass "<"] "DD" [:pass ">"]]]]] 6)
+           (str "<AA>\n"
+                "  <BB>>\n"
+                "  <<<<<<<<<<CC>>>\n"
+                "    <DD>\n"))))
+  (testing ":pass nodes can be used to affect indent whitespace by placing them before newline"
+    (is (= (ppstr [:group
+                   "AA"
+                   [:align
+                    [:pass "<"]
+                    :line
+                    "BB"
+                    [:pass "<"]
+                    :line
+                    "CC"
+                    [:align
+                     [:pass "<"]
+                     :line
+                     [:span "DD"]]]] 6)
+           (str "AA<\n"
+                "  BB<\n"
+                "  CC<\n"
+                "    DD\n")))) )
+
 (deftest terminate-test
   (is (= (ppstr [:group "a" [:line "-" ";"] "b"] 1000)
          "a-b\n"))

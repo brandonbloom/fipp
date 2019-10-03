@@ -1,8 +1,7 @@
 (ns fipp.engine
   "See: Oleg Kiselyov, Simon Peyton-Jones, and Amr Sabry
   Lazy v. Yield: Incremental, Linear Pretty-printing"
-  (:require [clojure.string :as s]
-            [fipp.deque :as deque])
+  (:require [fipp.deque :as deque])
   #?(:clj (:import (java.io Writer))))
 
 
@@ -175,26 +174,25 @@
         ([] (rf))
         ([res] (rf res))
         ([res {:keys [op right] :as node}]
-         (let [indent (peek @tab-stops)]
+         (let [indent (peek @tab-stops)
+               format-text (fn [text width]
+                             (let [res* (if (zero? @column)
+                                          (do (vswap! column + indent)
+                                              (rf res (apply str (repeat indent \space))))
+                                          res)]
+                               (vswap! column + width)
+                               (rf res* text)))]
            (case op
              :text
-               (let [text (:text node)
-                     res* (if (zero? @column)
-                            (do (vswap! column + indent)
-                                (rf res (apply str (repeat indent \space))))
-                            res)]
-                 (vswap! column + (count text))
-                 (rf res* text))
+               (let [text (:text node)]
+                 (format-text text (count text)))
+
              :escaped
-               (let [text (:text node)
-                     res* (if (zero? @column)
-                            (do (vswap! column + indent)
-                                (rf res (apply str (repeat indent \space))))
-                            res)]
-                 (vswap! column inc)
-                 (rf res* text))
+               (format-text (:text node) 1)
+
              :pass
-               (rf res (:text node))
+               (format-text (:text node) 0)
+
              :line
                (if (zero? @fits)
                  (do
