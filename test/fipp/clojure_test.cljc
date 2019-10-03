@@ -15,6 +15,7 @@
   (testing "metadata is omitted from identities"
     (is (= (clean (with-out-str (pprint [#'inc (with-meta 'x {:y 1})]
                                         {:print-meta true})))
-           "[#'clojure.core/inc ^{:y 1} x]"))))
+           #?(:clj "[#'clojure.core/inc ^{:y 1} x]"
+              :cljs "[#'cljs.core/inc ^{:y 1} x]")))))
 
 ;;TODO lots more tests

@@ -4,7 +4,6 @@
 (defn clean [s]
   (-> s
     str/trim
-    (str/replace "cljs.core/" "clojure.core.")
     ;; Force CLJS to JVM's class name behavior.
     (str/replace "fipp.edn-test/" "fipp.edn_test.")
     ;; Use dummy addresses and gensyms.

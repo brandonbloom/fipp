@@ -26,15 +26,14 @@
 
   ;; CLJS doesn't have futures, so dummy one up.
   #?(:clj (future 1)
-     :cljs (tagged-literal 'object ['clojure.core$future_call$reify__6730
-                                    "0x31e033f0"
+     :cljs (tagged-literal 'object ['cljs.core$future_call$reify__6730
                                     {:status :ready, :val 1}]))
 
   #{:foo :bar :baz}
 
   ])
 
-(def wide (clean "
+(def wide (clean #?(:clj "
 [(1 2 3 4 [:a :b :c :d] 5 6 7 8 9)
  {:foo 1, :bar \\c, :baz \"str\"}
  {:small-value [1 2 3],
@@ -49,9 +48,22 @@
          \"0x31e033f0\"
          {:status :ready, :val 1}]
  #{:baz :bar :foo}]
-"))
+"
+:cljs "
+[(1 2 3 4 [:a :b :c :d] 5 6 7 8 9)
+ {:foo 1, :bar \"c\", :baz \"str\"}
+ {:small-value [1 2 3],
+  :larger-value {:some-key \"foo\", :some-other-key \"bar\"}}
+ #fipp.edn_test.Person{:first-name \"Brandon\", :last-name \"Bloom\"}
+ #x 5
+ #object[cljs.core/Atom
+         {:status :ready,
+          :val (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)}]
+ #object[cljs.core$future_call$reify__123 {:status :ready, :val 1}]
+ #{:baz :bar :foo}]
+")))
 
-(def narrow (clean "
+(def narrow (clean #?(:clj "
 [(1
   2
   3
@@ -93,11 +105,58 @@
                 18
                 19)}]
  #object[clojure.core$future_call$reify__6730
-         \"0x43eff72d\"
          {:status :ready,
           :val 1}]
  #{:baz :bar :foo}]
-"))
+"
+:cljs "
+[(1
+  2
+  3
+  4
+  [:a :b :c :d]
+  5
+  6
+  7
+  8
+  9)
+ {:foo 1,
+  :bar \"c\",
+  :baz \"str\"}
+ {:small-value [1 2 3],
+  :larger-value {:some-key \"foo\",
+                 :some-other-key \"bar\"}}
+ #fipp.edn_test.Person{:first-name \"Brandon\",
+                       :last-name \"Bloom\"}
+ #x 5
+ #object[cljs.core/Atom
+         {:status :ready,
+          :val (0
+                1
+                2
+                3
+                4
+                5
+                6
+                7
+                8
+                9
+                10
+                11
+                12
+                13
+                14
+                15
+                16
+                17
+                18
+                19)}]
+ #object[cljs.core$future_call$reify__6730
+         {:status :ready,
+          :val 1}]
+ #{:baz :bar :foo}]
+"
+)))
 
 (def mdata (tagged-literal 'foo (with-meta [] {:x 1})))
 
@@ -110,7 +169,8 @@
            "#foo ^{:x 1} []")))
   (testing "Not quite Edn"
     (is (= (with-out-str (pprint #'inc))
-           "#'clojure.core/inc\n"))
+           #?(:clj "#'clojure.core/inc\n"
+              :cljs "#'cljs.core/inc\n")))
     (is (= (with-out-str (pprint #"x\?y"))
            "#\"x\\?y\"\n")))
   (testing ":print-length option"
