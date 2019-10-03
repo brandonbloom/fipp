@@ -105,6 +105,7 @@
                 18
                 19)}]
  #object[clojure.core$future_call$reify__6730
+         \"0x31e033f0\"
          {:status :ready,
           :val 1}]
  #{:baz :bar :foo}]
