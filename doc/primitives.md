@@ -36,6 +36,10 @@ Passthrough nodes are printed verbatim, but *not* measured.
 Use Passthrough nodes for zero-width control sequences, such as ANSI escape
 sequences for colors.
 
+When a passthrough node occurs at the beginning of a line, it is emitted after
+any indentation. If that's not appropriate, put the node at the end of the
+preceeding line, before the corresponding `:line` op.
+
 
 ## [:span children...]
 
