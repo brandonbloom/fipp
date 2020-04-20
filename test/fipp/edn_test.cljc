@@ -8,7 +8,8 @@
 
 (def data [
 
-  (list 1 2 3 4 [:a :b :c :d] 5 6 7 8 9)
+  #?(:clj (list 1 2 3 4 [:a :b :c :d] 5 6 7M 8N 9)
+     :cljs (list 1 2 3 4 [:a :b :c :d] 5 6 7.0 8N 9))
 
   {:foo 1 :bar \c :baz "str"}
 
@@ -34,7 +35,7 @@
   ])
 
 (def wide (clean #?(:clj "
-[(1 2 3 4 [:a :b :c :d] 5 6 7 8 9)
+[(1 2 3 4 [:a :b :c :d] 5 6 7M 8N 9)
  {:foo 1, :bar \\c, :baz \"str\"}
  {:small-value [1 2 3],
   :larger-value {:some-key \"foo\", :some-other-key \"bar\"}}
@@ -71,8 +72,8 @@
   [:a :b :c :d]
   5
   6
-  7
-  8
+  7M
+  8N
   9)
  {:foo 1, :bar \\c, :baz \"str\"}
  {:small-value [1 2 3],

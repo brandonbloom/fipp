@@ -49,7 +49,8 @@
     [:text (str x)])
 
   (visit-number [this x]
-    [:text (str x)])
+    (binding [*print-dup* false]
+      [:text (pr-str x)]))
 
   (visit-seq [this x]
     (if-let [pretty (symbols (first x))]
