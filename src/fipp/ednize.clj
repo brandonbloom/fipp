@@ -1,6 +1,5 @@
 (ns fipp.ednize
-  (:require [clojure.instant]
-            [fipp.util :refer [edn?]]))
+  (:require [fipp.util :refer [edn?]]))
 
 (defprotocol IEdn
   "Perform a shallow conversion to an Edn data structure."
@@ -67,17 +66,7 @@
   ;TODO reader-conditional
   ;TODO Eduction ??
 
-  java.util.Date
-  (-edn [x]
-    (let [s (format-hack #'clojure.instant/thread-local-utc-date-format x)]
-      (tagged-literal 'inst s)))
-
   ;TODO (defmethod print-method java.util.Calendar
-
-  java.sql.Timestamp
-  (-edn [x]
-    (let [s (format-hack #'clojure.instant/thread-local-utc-timestamp-format x)]
-      (tagged-literal 'inst s)))
 
   java.util.UUID
   (-edn [x]
@@ -91,3 +80,31 @@
 
 (defn record->tagged [x]
   (tagged-literal (-> x class .getName symbol) (into {} x)))
+
+(def java-sql-timestamp
+  (try
+    (Class/forName "java.sql.Timestamp")
+    (catch ClassNotFoundException _
+      false)))
+
+(def java-sql-timestamp?
+  (and java-sql-timestamp
+       (try
+         ;; strangely, this can fail even if the previous statement succeeded:
+         (require '[clojure.instant])
+         true
+         (catch ExceptionInInitializerError _
+           false))))
+
+(when java-sql-timestamp?
+  (require '[clojure.instant])
+  (eval `(extend-protocol IEdn
+           ~(-> java-sql-timestamp .getName symbol)
+           (~'-edn [x#]
+            (let [s# (format-hack ~(resolve 'clojure.instant/thread-local-utc-timestamp-format) x#)]
+              (tagged-literal ~''inst s#)))
+
+           java.util.Date
+           (~'-edn [x#]
+            (let [s# (format-hack ~(resolve 'clojure.instant/thread-local-utc-date-format) x#)]
+              (tagged-literal ~''inst s#))))))
