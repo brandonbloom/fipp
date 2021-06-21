@@ -95,16 +95,3 @@
          true
          (catch ExceptionInInitializerError _
            false))))
-
-(when java-sql-timestamp?
-  (require '[clojure.instant])
-  (eval `(extend-protocol IEdn
-           ~(-> java-sql-timestamp .getName symbol)
-           (~'-edn [x#]
-            (let [s# (format-hack ~(resolve 'clojure.instant/thread-local-utc-timestamp-format) x#)]
-              (tagged-literal ~''inst s#)))
-
-           java.util.Date
-           (~'-edn [x#]
-            (let [s# (format-hack ~(resolve 'clojure.instant/thread-local-utc-date-format) x#)]
-              (tagged-literal ~''inst s#))))))

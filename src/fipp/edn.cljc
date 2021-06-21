@@ -2,9 +2,12 @@
   "Provides a pretty document serializer and pprint fn for Clojure/EDN forms.
   See fipp.clojure for pretty printing Clojure code."
   (:require [clojure.string :as str]
-            [fipp.ednize :refer [edn record->tagged]]
+            [fipp.ednize :refer [edn java-sql-timestamp? record->tagged]]
             [fipp.visit :refer [visit visit*]]
             [fipp.engine :refer (pprint-document)]))
+
+(when java-sql-timestamp?
+  (require 'fipp.ednize.instant))
 
 (defn pretty-coll [{:keys [print-level print-length] :as printer}
                    open xs sep close f]
