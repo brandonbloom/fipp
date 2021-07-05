@@ -25,6 +25,6 @@ jobs:
         with:
           lein: 2.9.4
       - name: run tests
-        run: lein test
+        run: ./test.sh
         env:
           EVAL_IN_LEININGEN: ${{ matrix.eval-in-leiningen }}
