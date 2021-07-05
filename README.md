@@ -173,7 +173,7 @@ If you want to write your own printer, see
 
 ## License
 
-Copyright © 2015 Brandon Bloom
+Copyright © 2015-2021 Brandon Bloom
 
 Distributed under the Eclipse Public License, the same as Clojure.
 
