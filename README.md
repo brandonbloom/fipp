@@ -29,10 +29,7 @@ This version of Fipp works with Clojure 1.7 or newer.
 See [the v0.5 branch](https://github.com/brandonbloom/fipp/tree/v0.5) for
 a version of Fipp that works with Clojure 1.6.
 
-ClojureScript is supported from build 3269 and up. There are several known
-issues on both the Fipp and CLJS sides that are in the process of being fixed.
-While I wouldn't yet trust Fipp to serialize CLJS data durably, it should be
-more than usable interactively. Please let me know if it isn't for you.
+ClojureScript is supported from build 3269 and up.
 
 
 ### Colorization & REPL Integration
