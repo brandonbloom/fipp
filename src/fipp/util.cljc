@@ -37,3 +37,17 @@
   #?(:clj (instance? clojure.lang.IObj x)
      :cljs (and (satisfies? IWithMeta x)
                 (not (var? x))))) ;TODO: CLJS-2398
+
+(def instant-supported?
+  #?(:clj (and (try
+                 (Class/forName "java.sql.Timestamp")
+                 true
+                 (catch ClassNotFoundException _
+                   false))
+               (try
+                 ;; Strangely, this can fail even if the previous statement succeeded:
+                 (require '[clojure.instant])
+                 true
+                 (catch ExceptionInInitializerError _
+                   false)))
+     :cljs true))

@@ -1,11 +1,9 @@
 (ns fipp.ednize.instant
   "Provides features that may not be available under every Clojure / JVM combination."
-  (:require
-   [clojure.instant]
-   [fipp.ednize :refer [IEdn format-hack]])
-  (:import
-   (java.sql Timestamp)
-   (java.util Date)))
+  (:require [clojure.instant]
+            [fipp.ednize :refer [IEdn format-hack]])
+  (:import (java.sql Timestamp)
+           (java.util Date)))
 
 (extend-protocol IEdn
   Timestamp

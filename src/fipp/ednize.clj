@@ -1,5 +1,5 @@
 (ns fipp.ednize
-  (:require [fipp.util :refer [edn?]]))
+  (:require [fipp.util :refer [edn? instant-supported?]]))
 
 (defprotocol IEdn
   "Perform a shallow conversion to an Edn data structure."
@@ -61,12 +61,11 @@
   (-edn [x]
     (class->edn x))
 
-  ;TODO (defmethod print-method StackTraceElement
+  ;TODO StackTraceElement
   ;TODO print-throwable
   ;TODO reader-conditional
   ;TODO Eduction ??
-
-  ;TODO (defmethod print-method java.util.Calendar
+  ;TODO java.util.Calendar
 
   java.util.UUID
   (-edn [x]
@@ -81,17 +80,5 @@
 (defn record->tagged [x]
   (tagged-literal (-> x class .getName symbol) (into {} x)))
 
-(def java-sql-timestamp
-  (try
-    (Class/forName "java.sql.Timestamp")
-    (catch ClassNotFoundException _
-      false)))
-
-(def java-sql-timestamp?
-  (and java-sql-timestamp
-       (try
-         ;; strangely, this can fail even if the previous statement succeeded:
-         (require '[clojure.instant])
-         true
-         (catch ExceptionInInitializerError _
-           false))))
+(when instant-supported?
+  (require 'fipp.ednize.instant))
