@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         java-version: ["8", "11", "16"]
-        eval_in_leiningen: ["true", "false"]
+        eval-in-leiningen: ["true", "false"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v2
@@ -27,4 +27,4 @@ jobs:
       - name: run tests
         run: lein test
         env:
-          eval_in_leiningen: ${{ matrix.eval_in_leiningen }}
+          EVAL_IN_LEININGEN: ${{ matrix.eval-in-leiningen }}
