@@ -24,11 +24,6 @@
         id (format "0x%x" (System/identityHashCode o))]
     (tagged-literal 'object [cls id rep])))
 
-(defn format-hack [v x]
-  (let [local ^java.lang.ThreadLocal @v
-        fmt ^java.text.SimpleDateFormat (.get local)]
-    (.format fmt x)))
-
 (extend-protocol IEdn
 
   nil
