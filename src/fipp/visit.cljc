@@ -1,7 +1,6 @@
 (ns fipp.visit
   "Convert to and visit edn structures."
-  (:require [fipp.util :as util]
-            [fipp.ednize :refer [override?]]))
+  (:require [fipp.util :as util]))
 
 ;;;TODO Stablize public interface
 
@@ -27,6 +26,8 @@
   (visit-var [this x])
   (visit-pattern [this x])
   (visit-record [this x])
+
+  (visit-override? [this x])
   )
 
 (defn visit*
@@ -34,7 +35,7 @@
   [visitor x]
   (cond
     (nil? x) (visit-nil visitor)
-    (override? x) (visit-unknown visitor x)
+    (visit-override? visitor x) (visit-unknown visitor x)
     (util/boolean? x) (visit-boolean visitor x)
     (string? x) (visit-string visitor x)
     (util/char? x) (visit-character visitor x)
