@@ -126,10 +126,21 @@
 
 ;;; Format deref, quote, unquote, var
 
-(defn pretty-quote [p [macro arg]]
-  [:span (case (keyword (name macro))
-           :deref "@", :quote "'", :unquote "~", :var "#'")
-         (visit p arg)])
+(defn- deref? [arg]
+  (and (seq? arg)
+       (= 2 (count arg))
+       (= 'clojure.core/deref (first arg))))
+
+(defn pretty-quote [p [macro arg :as all]]
+  (if-some [rm (when (= 2 (count all))
+                 (case macro
+                   clojure.core/deref "@"
+                   quote "'"
+                   clojure.core/unquote (if (deref? arg) "~ " "~")
+                   var "#'"
+                   nil))]
+    [:span rm (visit p arg)]
+    (apply list-group (interpose " " (map #(visit p %) all)))))
 
 ;;; Format let, loop, and similar
 
@@ -183,7 +194,7 @@
      pretty-ns    '[ns]
      pretty-let   '[binding doseq dotimes for if-let if-some let let* loop loop*
                     when-first when-let when-some with-local-vars with-open with-redefs]
-     pretty-quote '[deref quote unquote var]
+     pretty-quote '[clojure.core/deref quote clojure.core/unquote var]
      pretty-type  '[deftype defrecord]
      pretty-reify '[reify]}))
 
