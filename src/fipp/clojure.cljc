@@ -126,10 +126,12 @@
 
 ;;; Format deref, quote, unquote, var
 
-(defn pretty-quote [p [macro arg]]
-  [:span (case (keyword (name macro))
-           :deref "@", :quote "'", :unquote "~", :var "#'")
-         (visit p arg)])
+(defn pretty-quote [p [macro & args :as form]]
+  (if (= (count args) 1)
+    [:span (case (keyword (name macro))
+             :deref "@", :quote "'", :unquote "~", :var "#'")
+           (visit p (first args))]
+    (pretty-arrow p form)))
 
 ;;; Format let, loop, and similar
 

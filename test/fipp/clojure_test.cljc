@@ -18,4 +18,11 @@
            #?(:clj "[#'clojure.core/inc ^{:y 1} x]"
               :cljs "[#'cljs.core/inc ^{:y 1} x]")))))
 
+(deftest quote-test
+  (testing "deref"
+    (is (= (clean (with-out-str (pprint '@x))) "@x"))
+    (is (= (clean (with-out-str (pprint '(deref x)))) "@x"))
+    (is (= (clean (with-out-str (pprint '(deref x y)))) "(deref x y)"))
+    ))
+
 ;;TODO lots more tests
