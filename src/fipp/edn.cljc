@@ -23,7 +23,7 @@
   [cache x]
   (let [clazz (type x)
         ret (get @cache clazz ::not-found)]
-    (if (identical? ::not-found ret)
+    (if (#?(:clj identical? :cljs keyword-identical?) ::not-found ret)
       (let [ret (satisfies? IOverride x)]
         (vswap! cache assoc clazz ret)
         ret)
