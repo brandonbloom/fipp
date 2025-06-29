@@ -19,11 +19,13 @@
                    [:span sep "..."])]
     [:group open [:align ys ellipsis] close]))
 
+(def not-found #?(:clj (Object.) :cljs (js-obj)))
+
 (defn- cached-override?
   [cache x]
   (let [clazz (type x)
-        ret (get @cache clazz ::not-found)]
-    (if (#?(:clj identical? :cljs keyword-identical?) ::not-found ret)
+        ret (get @cache clazz not-found)]
+    (if (identical? not-found ret)
       (let [ret (satisfies? IOverride x)]
         (vswap! cache assoc clazz ret)
         ret)
