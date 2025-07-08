@@ -17,6 +17,12 @@
           s (.format dt DateTimeFormatter/ISO_LOCAL_DATE_TIME)]
       (tagged-literal 'inst s)))
 
+  java.sql.Date
+  (-edn [x]
+    (let [d (.toLocalDate x)
+          s (.format d DateTimeFormatter/ISO_LOCAL_DATE)]
+      (tagged-literal 'inst s)))
+
   Date
   (-edn [x]
     (let [dt (-> x .toInstant (.atZone (ZoneId/of "GMT")))
