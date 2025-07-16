@@ -2,7 +2,7 @@
   "Provides a pretty document serializer and pprint fn for Clojure/EDN forms.
   See fipp.clojure for pretty printing Clojure code."
   (:require [clojure.string :as str]
-            [fipp.ednize :refer [edn record->tagged]]
+            [fipp.ednize :refer [edn record->tagged IOverride]]
             [fipp.visit :refer [visit visit*]]
             [fipp.engine :refer (pprint-document)]))
 
@@ -19,10 +19,24 @@
                    [:span sep "..."])]
     [:group open [:align ys ellipsis] close]))
 
-(defrecord EdnPrinter [symbols print-meta print-length print-level]
+(def not-found #?(:clj (Object.) :cljs (js-obj)))
+
+(defn- cached-override?
+  [cache x]
+  (let [clazz (type x)
+        ret (get @cache clazz not-found)]
+    (if (identical? not-found ret)
+      (let [ret (satisfies? IOverride x)]
+        (vswap! cache assoc clazz ret)
+        ret)
+      ret)))
+
+(defrecord EdnPrinter [symbols print-meta print-length print-level cache]
 
   fipp.visit/IVisitor
 
+  (visit-override? [_ x]
+    (cached-override? cache x))
 
   (visit-unknown [this x]
     (visit this (edn x)))
@@ -96,6 +110,7 @@
   ([x] (pretty x {}))
   ([x options]
    (let [defaults {:symbols {}
+                   :cache (volatile! {})
                    :print-length *print-length*
                    :print-level *print-level*
                    :print-meta *print-meta*}
