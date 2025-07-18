@@ -19,8 +19,7 @@
 
   java.sql.Date
   (-edn [x]
-    (let [d (.toLocalDate x)
-          s (.format d DateTimeFormatter/ISO_LOCAL_DATE)]
+    (let [s (.toString x)]
       (tagged-literal 'inst s)))
 
   Date

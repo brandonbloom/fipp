@@ -31,9 +31,7 @@
                       (.newInstance (into-array Object [0])))
                   'inst "1970-01-01T00:00:00"])
 
-        #?@(:clj [(-> java.sql.Date
-                      (.getConstructor (into-array Class [Long/TYPE]))
-                      (.newInstance (into-array Object [0])))
+        #?@(:clj [(java.sql.Date/valueOf (java.time.LocalDate/of 1970 1 1))
                   'inst "1970-01-01"]))))
 
 
