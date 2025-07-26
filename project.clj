@@ -3,7 +3,7 @@
   :url "https://github.com/brandonbloom/fipp"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :dependencies [[org.clojure/clojure "1.12.1"]
                  [org.clojure/core.rrb-vector "0.1.2"]]
   ;; See <https://github.com/brandonbloom/fipp/issues/72#issuecomment-576816826>
   ;; and test code in <.github/workflows/pr.yml>.
