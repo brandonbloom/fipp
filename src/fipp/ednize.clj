@@ -8,8 +8,20 @@
 (defprotocol IOverride
   "Mark object as preferring its custom IEdn behavior.")
 
+;; Workaround for slow `satisfies?` checks.
+;; See https://github.com/brandonbloom/fipp/issues/87
+;; and https://clojure.atlassian.net/browse/CLJ-1814
+(def override-cache
+  (volatile! {}))
+
 (defn override? [x]
-  (satisfies? IOverride x))
+  (let [cls (class x)
+        ret (get @override-cache cls ::not-found)]
+    (if (identical? ::not-found ret)
+      (let [ret (satisfies? IOverride x)]
+        (vswap! override-cache assoc cls ret)
+        ret)
+       ret)))
 
 (defn edn [x]
   (-edn x))
